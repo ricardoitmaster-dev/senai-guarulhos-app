@@ -8,7 +8,7 @@ import os
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
 # --- BANCO DE DADOS ---
-conn = sqlite3.connect('senai_guarulhos_final.db', check_same_thread=False)
+conn = sqlite3.connect(r'G:\Formação IA Generativa - Google Cloud\Backup\senai_database_backup.db', check_same_thread=False)
 c = conn.cursor()
 c.execute('''CREATE TABLE IF NOT EXISTS leads 
              (nome TEXT, email TEXT, whatsapp TEXT, area TEXT, curso TEXT, sugestao TEXT, data TEXT)''')
