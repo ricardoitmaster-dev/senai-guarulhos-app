@@ -4,13 +4,35 @@ import pandas as pd
 from datetime import datetime
 import os
 from PIL import Image
+import textwrap  # Importante: Biblioteca nativa para reconstruir o texto
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- CONEXÃO COM GOOGLE SHEETS ---
-# Com o TOML corrigido nos Secrets, usamos a conexão padrão que é mais segura
-conn = st.connection("gsheets", type=GSheetsConnection)
+# --- CONEXÃO COM GOOGLE SHEETS: SOLUÇÃO DEFINITIVA (ANTI-PADDING) ---
+try:
+    # 1. Copia as credenciais do Secrets para um dicionário mutável
+    creds = dict(st.secrets["connections"]["gsheets"])
+    
+    # 2. Extrai a chave privada crua, do jeito que veio do TOML
+    pk = creds["private_key"]
+    
+    # 3. Limpeza pesada: arranca cabeçalhos, rodapés, espaços e quebras de linha invisíveis
+    pk = pk.replace("-----BEGIN PRIVATE KEY-----", "")
+    pk = pk.replace("-----END PRIVATE KEY-----", "")
+    pk = pk.replace(" ", "").replace("\n", "").replace("\r", "").replace("\\n", "")
+    
+    # 4. Reconstrói o PEM perfeito (exatamente 64 caracteres por linha, padrão criptográfico)
+    pk_formatada = "\n".join(textwrap.wrap(pk, 64))
+    creds["private_key"] = f"-----BEGIN PRIVATE KEY-----\n{pk_formatada}\n-----END PRIVATE KEY-----\n"
+    
+    # 5. Entrega as credenciais higienizadas para a biblioteca
+    conn = st.connection("gsheets", type=GSheetsConnection, **creds)
+
+except Exception as e:
+    st.error(f"Erro na preparação das credenciais: {e}")
+    conn = st.connection("gsheets", type=GSheetsConnection)
+
 
 # --- MAPEAMENTO DE CURSOS ---
 dados_cursos = {
@@ -84,13 +106,13 @@ if btn_enviar:
             # 3. Concatenar
             df_final = pd.concat([df_atual, novo_lead], ignore_index=True)
             
-            # 4. Gravar de volta na aba principal (worksheet=0 por padrão)
+            # 4. Gravar de volta
             conn.update(data=df_final)
             
             st.success(f"Sucesso, {nome}! Seu interesse foi registrado.")
             st.balloons()
         except Exception as e:
-            st.error(f"Erro ao salvar: {str(e)}")
+            st.error(f"Erro ao salvar na planilha: {str(e)}")
     else:
         st.error("Por favor, preencha nome, área e curso.")
 
@@ -101,7 +123,6 @@ if senha_adm == "senai122":
     try:
         df_leads = conn.read()
         if not df_leads.empty:
-            # Tentar ordenar por data se a coluna existir
             if 'data' in df_leads.columns:
                 try:
                     df_leads['data_dt'] = pd.to_datetime(df_leads['data'], format="%d/%m/%Y %H:%M:%S", errors='coerce')
