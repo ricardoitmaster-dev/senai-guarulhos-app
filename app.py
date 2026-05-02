@@ -9,13 +9,8 @@ from PIL import Image
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
 # --- CONEXÃO COM GOOGLE SHEETS ---
-# Ajuste de especialista: Forçamos o desempacotamento dos segredos para garantir a autenticação
-try:
-    creds = st.secrets["connections"]["gsheets"]
-    conn = st.connection("gsheets", type=GSheetsConnection, **creds)
-except Exception as e:
-    st.error(f"Erro na configuração das credenciais: {e}")
-    conn = st.connection("gsheets", type=GSheetsConnection)
+# Com o TOML corrigido nos Secrets, usamos a conexão padrão que é mais segura
+conn = st.connection("gsheets", type=GSheetsConnection)
 
 # --- MAPEAMENTO DE CURSOS ---
 dados_cursos = {
@@ -89,7 +84,7 @@ if btn_enviar:
             # 3. Concatenar
             df_final = pd.concat([df_atual, novo_lead], ignore_index=True)
             
-            # 4. Gravar de volta
+            # 4. Gravar de volta na aba principal (worksheet=0 por padrão)
             conn.update(data=df_final)
             
             st.success(f"Sucesso, {nome}! Seu interesse foi registrado.")
@@ -103,15 +98,16 @@ if btn_enviar:
 st.sidebar.title("🔒 Admin")
 senha_adm = st.sidebar.text_input("Senha", type="password")
 if senha_adm == "senai122":
-    # Lendo dados para o Admin
     try:
         df_leads = conn.read()
         if not df_leads.empty:
-            try:
-                df_leads['data_dt'] = pd.to_datetime(df_leads['data'], format="%d/%m/%Y %H:%M:%S", errors='coerce')
-                df_leads = df_leads.sort_values(by='data_dt', ascending=False).drop(columns=['data_dt'])
-            except:
-                pass
+            # Tentar ordenar por data se a coluna existir
+            if 'data' in df_leads.columns:
+                try:
+                    df_leads['data_dt'] = pd.to_datetime(df_leads['data'], format="%d/%m/%Y %H:%M:%S", errors='coerce')
+                    df_leads = df_leads.sort_values(by='data_dt', ascending=False).drop(columns=['data_dt'])
+                except:
+                    pass
             
             if st.sidebar.checkbox("Ver Interessados"):
                 st.write("### 📊 Relatório (Ordenado por Data)")
@@ -119,5 +115,5 @@ if senha_adm == "senai122":
             
             csv_data = df_leads.to_csv(index=False).encode('utf-8-sig')
             st.sidebar.download_button("📥 Baixar Planilha", csv_data, "leads_senai.csv", "text/csv")
-    except:
-        st.sidebar.warning("Aguardando conexão com a planilha...")
+    except Exception as e:
+        st.sidebar.warning(f"Erro na leitura administrativa: {e}")
