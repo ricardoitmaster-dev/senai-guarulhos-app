@@ -8,10 +8,14 @@ from PIL import Image
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- BANCO DE DADOS ---
-# No GitHub, ele criará o arquivo .db na raiz do projeto automaticamente
-conn = sqlite3.connect('senai_database.db', check_same_thread=False)
+# --- BANCO DE DADOS (VERSÃO PARA NUVEM) ---
+# Usamos um nome novo para forçar o Streamlit a criar um banco limpo e funcional na nuvem
+db_file = 'dados_senai_v1.db'
+
+conn = sqlite3.connect(db_file, check_same_thread=False)
 c = conn.cursor()
+
+# Criar a tabela se ela não existir
 c.execute('''CREATE TABLE IF NOT EXISTS leads 
              (nome TEXT, email TEXT, whatsapp TEXT, area TEXT, curso TEXT, sugestao TEXT, data TEXT)''')
 conn.commit()
