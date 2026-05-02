@@ -9,66 +9,60 @@ from googleapiclient.discovery import build
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- CSS AVANÇADO: O TOQUE DE ARTE UI/UX ---
+# --- CSS: O TOQUE VITRIFICADO (GLASSMORPHISM) ---
 st.markdown("""
     <style>
-    /* Fundo estilo "Gelo" (Ice Blue/Grey Gradient) */
+    /* Fundo degradê estilo Gelo */
     .stApp {
-        background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+        background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
     }
     
-    /* Cabeçalho SENAI moderno com sombra e degradê */
+    /* Cabeçalho SENAI com profundidade */
     .header-senai { 
         background: linear-gradient(90deg, #e3000f 0%, #ff4b4b 100%); 
-        padding: 25px; 
-        border-radius: 15px; 
+        padding: 30px; 
+        border-radius: 20px; 
         color: white; 
         text-align: center; 
-        box-shadow: 0 10px 15px -3px rgba(227, 0, 15, 0.3);
-        margin-bottom: 30px;
+        box-shadow: 0 15px 25px -5px rgba(227, 0, 15, 0.4);
+        margin-bottom: 40px;
     }
-    .header-senai h1 { margin: 0; font-size: 2.8rem; font-weight: 800; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
-    .header-senai p { margin: 5px 0 0 0; font-size: 1.2rem; opacity: 0.95; }
+    .header-senai h1 { margin: 0; font-size: 3rem; font-weight: 900; }
 
-    /* Efeito Glassmorphism no Formulário (Container) */
+    /* EFEITO VITRIFICADO NO FORMULÁRIO */
     [data-testid="stForm"] {
-        background-color: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(12px);
-        padding: 2.5rem;
-        border-radius: 20px;
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.6);
+        background: rgba(255, 255, 255, 0.4) !important; /* Transparência do vidro */
+        backdrop-filter: blur(15px) saturate(180%) !important; /* O desfoque essencial */
+        -webkit-backdrop-filter: blur(15px) saturate(180%);
+        border-radius: 25px !important;
+        border: 1px solid rgba(255, 255, 255, 0.5) !important; /* Borda brilhante */
+        padding: 3rem !important;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1) !important;
     }
 
-    /* Botão de Envio com efeito Hover */
+    /* Botão de Envio Estilizado */
     div.stButton > button { 
-        background: linear-gradient(90deg, #1e1e1e 0%, #333333 100%) !important; 
+        background: linear-gradient(90deg, #232526 0%, #414345 100%) !important;
         color: white !important; 
-        font-weight: 800 !important; 
-        letter-spacing: 1px;
-        width: 100% !important; 
-        border-radius: 12px !important; 
-        border: none !important;
-        height: 55px;
-        transition: all 0.3s ease !important;
+        font-weight: 700 !important;
+        height: 60px !important;
+        border-radius: 15px !important;
+        transition: 0.4s !important;
     }
     div.stButton > button:hover {
-        transform: translateY(-3px);
+        background: #e3000f !important;
+        transform: scale(1.02);
         box-shadow: 0 10px 20px rgba(227, 0, 15, 0.3);
-        background: linear-gradient(90deg, #e3000f 0%, #cc0000 100%) !important; 
-        color: white !important;
     }
 
-    /* Ajuste dos textos e labels para ficarem mais elegantes */
-    label {
-        font-weight: 700 !important;
-        color: #2d3748 !important;
-        font-size: 1.05rem !important;
+    /* Estilo dos inputs para combinar com o vidro */
+    input, textarea, .stSelectbox {
+        border-radius: 10px !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- BLOCO INTOCÁVEL: CONEXÃO GOOGLE SHEETS ---
+# --- CONEXÃO GOOGLE SHEETS (MANTIDA IGUAL) ---
 @st.cache_resource
 def conectar_google_sheets():
     try:
@@ -114,7 +108,7 @@ def salvar_dados(df):
         return True
     except: return False
 
-# --- MAPEAMENTO DE CURSOS ---
+# --- DADOS ---
 dados_cursos = {
     "Administração e Gestão": ["Almoxarife", "Assistente Administrativo", "Assistente de RH", "Logística"],
     "Eletroeletrônica": ["Eletricista Instalador", "Comandos Elétricos", "CLP"],
@@ -123,7 +117,7 @@ dados_cursos = {
     "Automobilística": ["Mecânico de Automóveis", "Eletricista Veicular"]
 }
 
-# --- IMAGENS E CABEÇALHO ---
+# --- INTERFACE ---
 path_logo = os.path.join("imagens", "logo.png")
 if os.path.exists(path_logo):
     c1, c2, c3 = st.columns([2, 1, 2])
@@ -131,51 +125,41 @@ if os.path.exists(path_logo):
 
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Hermenegildo Campos de Almeida</p></div>', unsafe_allow_html=True)
 
-path_fachada = os.path.join("imagens", "fachada.jpg")
-if os.path.exists(path_fachada):
-    st.write("")
-    f1, f2, f3 = st.columns([1, 6, 1])
-    with f2: st.image(Image.open(path_fachada), use_container_width=True)
+st.write("") # Espaçador
 
-st.write("---")
-
-# --- FORMULÁRIO ---
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    st.markdown("<h3 style='text-align: center; color: #1e1e1e; margin-bottom: 20px;'>📋 Ficha de Interesse</h3>", unsafe_allow_html=True)
-    area_sel = st.selectbox("1. Selecione a Área:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
+    st.markdown("<h3 style='text-align: center; color: #1e1e1e;'>✨ Interessado em um Curso?</h3>", unsafe_allow_html=True)
+    area_sel = st.selectbox("Selecione a Área:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
     lista_cursos = ["Selecione..."] + sorted(dados_cursos[area_sel]) if area_sel != "Selecione..." else ["Selecione a área"]
-    curso_sel = st.selectbox("2. Selecione o Curso:", lista_cursos)
+    curso_sel = st.selectbox("Selecione o Curso:", lista_cursos)
 
-    with st.form("form_final", clear_on_submit=True):
+    with st.form("form_vitrificado", clear_on_submit=True):
         nome = st.text_input("Nome Completo")
-        email = st.text_input("E-mail")
+        email = st.text_input("Seu melhor E-mail")
         whats = st.text_input("WhatsApp")
-        sugestao = st.text_area("Sugestões ou dúvidas (Opcional)")
-        st.write("") # Pequeno espaço para respirar antes do botão
-        btn = st.form_submit_button("REGISTRAR INTERESSE")
+        sugestao = st.text_area("Mensagem Adicional")
+        btn = st.form_submit_button("ENVIAR MEU INTERESSE")
 
-# --- LÓGICA DE ENVIO ---
 if btn:
     if nome and email and area_sel != "Selecione..." and service:
         df_atual = ler_dados()
         novo = pd.DataFrame([{"nome": nome, "email": email, "whatsapp": whats, "area": area_sel, "curso": curso_sel, "sugestao": sugestao, "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S")}])
         if salvar_dados(pd.concat([df_atual, novo], ignore_index=True)):
-            st.success(f"### ✅ Sucesso, {nome}!")
-            st.info("Seu interesse foi registrado. **Assim que o curso for aberto, a equipe do SENAI Guarulhos 122 entrará em contato.**")
+            st.success(f"Excelente, {nome}! Seus dados foram salvos no Google Sheets.")
             st.balloons()
     else:
-        st.warning("Preencha os campos obrigatórios (Nome, E-mail e Curso).")
+        st.warning("Por favor, preencha todos os campos obrigatórios.")
 
-# --- PAINEL ADMINISTRATIVO ---
-st.sidebar.title("🔒 Área Administrativa")
+# --- ADMIN ---
+st.sidebar.title("🔒 ADM")
 acesso = st.sidebar.text_input("Senha", type="password")
 if acesso == "senai122":
-    st.sidebar.success("Acesso Liberado")
+    st.sidebar.success("Conectado")
     df_adm = ler_dados()
     if not df_adm.empty:
-        if st.sidebar.checkbox("Ver Leads"):
-            st.write("### 📊 Relatório de Leads")
+        if st.sidebar.checkbox("Visualizar Leads"):
+            st.write("### Leads Captados")
             st.dataframe(df_adm, use_container_width=True)
         csv = df_adm.to_csv(index=False).encode('utf-8-sig')
-        st.sidebar.download_button("📥 Exportar CSV", csv, "leads.csv", "text/csv")
+        st.sidebar.download_button("Exportar CSV", csv, "leads_senai122.csv")
