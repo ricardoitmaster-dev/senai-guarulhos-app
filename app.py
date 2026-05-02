@@ -9,12 +9,11 @@ from googleapiclient.discovery import build
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- CONEXÃO COM GOOGLE SHEETS (MOTOR OFICIAL) ---
+# --- CONEXÃO COM GOOGLE SHEETS (ESTÁVEL) ---
 @st.cache_resource
 def conectar_google_sheets():
     try:
         s = st.secrets["connections"]["gsheets"]
-        # Limpeza da chave para evitar erro de ASN.1 / short data
         pk = s["private_key"].replace("\\n", "\n").strip()
         
         info = {
@@ -34,7 +33,7 @@ def conectar_google_sheets():
         creds = service_account.Credentials.from_service_account_info(info, scopes=scopes)
         return build("sheets", "v4", credentials=creds)
     except Exception as e:
-        st.error(f"Erro Crítico de Autenticação: {e}")
+        st.error(f"Erro de Conexão: {e}")
         return None
 
 service = conectar_google_sheets()
@@ -60,16 +59,14 @@ def salvar_dados(df):
         url = st.secrets["connections"]["gsheets"]["spreadsheet"]
         sheet_id = extrair_id_planilha(url)
         valores = [df.columns.values.tolist()] + df.values.tolist()
-        body = {"values": valores}
         service.spreadsheets().values().update(
             spreadsheetId=sheet_id, range="A1",
-            valueInputOption="RAW", body=body
+            valueInputOption="RAW", body={"values": valores}
         ).execute()
         return True
-    except:
-        return False
+    except: return False
 
-# --- MAPEAMENTO DE ÁREAS E CURSOS (O QUE HAVIA SUMIDO) ---
+# --- MAPEAMENTO DE CURSOS ---
 dados_cursos = {
     "Administração e Gestão": ["Almoxarife", "Assistente Administrativo", "Assistente de RH", "Logística"],
     "Eletroeletrônica": ["Eletricista Instalador", "Comandos Elétricos", "CLP"],
@@ -82,60 +79,69 @@ dados_cursos = {
     "Outras Áreas": ["Segurança do Trabalho", "Alimentos"]
 }
 
-# --- ESTILO CSS ---
+# --- ESTILO E IMAGENS ---
 st.markdown("""
     <style>
-    .header-senai { background-color: #ff0000; padding: 20px; border-radius: 12px; color: white; text-align: center; margin-bottom: 25px; }
-    div.stButton > button { background-color: #000000 !important; color: white !important; font-weight: bold !important; width: 100% !important; border-radius: 8px !important; height: 50px; }
-    label { font-weight: bold !important; color: #1e1e1e !important; }
+    .header-senai { background-color: #ff0000; padding: 15px; border-radius: 12px; color: white; text-align: center; }
+    div.stButton > button { background-color: #000000 !important; color: white !important; width: 100% !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- CABEÇALHO ---
+# Exibição do Logo
+path_logo = os.path.join("imagens", "logo.png")
+if os.path.exists(path_logo):
+    col_l1, col_l2, col_l3 = st.columns([2, 1, 2])
+    with col_l2: st.image(Image.open(path_logo), width=150)
+
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Hermenegildo Campos de Almeida</p></div>', unsafe_allow_html=True)
+
+# Exibição da Fachada
+path_fachada = os.path.join("imagens", "fachada.jpg")
+if os.path.exists(path_fachada):
+    st.write("")
+    f_col1, f_col2, f_col3 = st.columns([1, 6, 1])
+    with f_col2: st.image(Image.open(path_fachada), use_container_width=True)
+
+st.write("---")
 
 # --- FORMULÁRIO ---
 col_f1, col_f2, col_f3 = st.columns([1, 2, 1])
-
 with col_f2:
     st.write("### 📋 Ficha de Interesse")
+    area_sel = st.selectbox("1. Selecione a Área:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
     
-    # Lógica de seleção dinâmica que você desejava:
-    opcoes_areas = ["Selecione..."] + sorted(list(dados_cursos.keys()))
-    area_sel = st.selectbox("1. Selecione a Área de Interesse:", opcoes_areas)
-    
-    if area_sel != "Selecione...":
-        lista_cursos = ["Selecione..."] + sorted(dados_cursos[area_sel])
-    else:
-        lista_cursos = ["Selecione a área primeiro"]
-        
+    lista_cursos = ["Selecione..."] + sorted(dados_cursos[area_sel]) if area_sel != "Selecione..." else ["Selecione a área"]
     curso_sel = st.selectbox("2. Selecione o Curso:", lista_cursos)
 
     with st.form("form_final", clear_on_submit=True):
         nome = st.text_input("Nome Completo")
         email = st.text_input("E-mail")
-        whats = st.text_input("WhatsApp (com DDD)")
-        sugestao = st.text_area("Alguma dúvida ou sugestão?")
-        
-        btn_enviar = st.form_submit_button("REGISTRAR INTERESSE")
+        whats = st.text_input("WhatsApp")
+        sugestao = st.text_area("Sugestões ou dúvidas")
+        btn = st.form_submit_button("REGISTRAR INTERESSE")
 
-# --- LÓGICA DE ENVIO ---
-if btn_enviar:
-    if area_sel != "Selecione..." and curso_sel != "Selecione..." and nome and email:
-        if service:
-            df_atual = ler_dados()
-            novo_lead = pd.DataFrame([{
-                "nome": nome, "email": email, "whatsapp": whats,
-                "area": area_sel, "curso": curso_sel, "sugestao": sugestao,
-                "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            }])
-            
-            df_final = pd.concat([df_atual, novo_lead], ignore_index=True)
-            
-            if salvar_dados(df_final):
-                st.success(f"Excelente, {nome}! Seu interesse em {curso_sel} foi registrado com sucesso.")
-                st.balloons()
-            else:
-                st.error("Erro ao salvar na planilha. Verifique as permissões de Editor.")
-    else:
-        st.warning("Por favor, preencha todos os campos obrigatórios (Nome, E-mail, Área e Curso).")
+if btn:
+    if nome and email and area_sel != "Selecione..." and service:
+        df_atual = ler_dados()
+        novo = pd.DataFrame([{
+            "nome": nome, "email": email, "whatsapp": whats, "area": area_sel, 
+            "curso": curso_sel, "sugestao": sugestao, "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        }])
+        if salvar_dados(pd.concat([df_atual, novo], ignore_index=True)):
+            # Mensagem de confirmação restaurada
+            st.success(f"Obrigado, {nome}! Seu interesse foi registrado. Assim que o curso for aberto, entraremos em contato através dos dados informados.")
+            st.balloons()
+
+# --- PAINEL ADMINISTRATIVO (RESTAURADO) ---
+st.sidebar.title("🔒 Área Administrativa")
+senha = st.sidebar.text_input("Senha de Acesso", type="password")
+if senha == "senai122":
+    st.sidebar.success("Acesso Autorizado")
+    df_adm = ler_dados()
+    if not df_adm.empty:
+        if st.sidebar.checkbox("Visualizar Leads"):
+            st.write("### 📊 Relatório de Interessados")
+            st.dataframe(df_adm)
+        
+        csv = df_adm.to_csv(index=False).encode('utf-8-sig')
+        st.sidebar.download_button("📥 Baixar Planilha", csv, "leads_senai_122.csv", "text/csv")
