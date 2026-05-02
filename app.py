@@ -69,25 +69,39 @@ with col_f2:
         sugestao = st.text_area("Sugestão de curso ou observação:")
         btn_enviar = st.form_submit_button("REGISTRAR INTERESSE")
         
-        if btn_enviar:
+if btn_enviar:
             if nome and area_sel != "Selecione..." and curso_sel != "Selecione...":
-                # Lendo dados atuais para anexar
-                df_atual = conn.read(spreadsheet=url_planilha)
-                novo_lead = pd.DataFrame([{
-                    "nome": nome, "email": email, "whatsapp": whats,
-                    "area": area_sel, "curso": curso_sel, "sugestao": sugestao,
-                    "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                }])
-                df_final = pd.concat([df_atual, novo_lead], ignore_index=True)
-                
-                # Salvando na planilha
-                conn.update(spreadsheet=url_planilha, data=df_final)
-                
-                st.success(f"Obrigado, {nome}! Seu interesse foi registrado no Google Sheets!")
-                st.balloons()
-            else:
-                st.error("Preencha todos os campos obrigatórios.")
+                try:
+                    # Cria o novo lead
+                    novo_row = {
+                        "nome": [nome],
+                        "email": [email],
+                        "whatsapp": [whats],
+                        "area": [area_sel],
+                        "curso": [curso_sel],
+                        "sugestao": [sugestao],
+                        "data": [datetime.now().strftime("%d/%m/%Y %H:%M:%S")]
+                    }
+                    df_novo = pd.DataFrame(novo_row)
 
+                    # Tenta ler os dados existentes
+                    try:
+                        df_antigo = conn.read(spreadsheet=url_planilha, usecols=[0,1,2,3,4,5,6])
+                        df_final = pd.concat([df_antigo, df_novo], ignore_index=True)
+                    except:
+                        # Se a planilha estiver vazia ou der erro na leitura, usa só o novo
+                        df_final = df_novo
+
+                    # Comando de atualização direta
+                    conn.update(spreadsheet=url_planilha, data=df_final)
+                    
+                    st.success(f"Obrigado, {nome}! Seu interesse foi registrado!")
+                    st.balloons()
+                except Exception as e:
+                    st.error(f"Erro de conexão com o Google: Verifique se a planilha permite edição pública.")
+            else:
+                st.error("Por favor, selecione a Área e o Curso.")
+                
 # --- PAINEL ADMINISTRATIVO ---
 st.sidebar.title("🔒 Admin")
 senha_adm = st.sidebar.text_input("Senha", type="password")
