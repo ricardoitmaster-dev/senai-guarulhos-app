@@ -9,8 +9,8 @@ from PIL import Image
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
 # --- CONEXÃO COM GOOGLE SHEETS ---
-# Use o URL da sua planilha aqui
-url_planilha = "https://docs.google.com/spreadsheets/d/1sZGFkC_09jzG_nNUuMZ5tXSdXptvo_o2/edit?gid=1419719135#gid=1419719135"
+# Puxa o link limpo que você acabou de salvar nos Secrets
+url_planilha = st.secrets["connections"]["gsheets"]["spreadsheet"]
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 # --- MAPEAMENTO DE CURSOS ---
