@@ -9,28 +9,31 @@ import textwrap
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- CONEXÃO COM GOOGLE SHEETS: HIGIENIZAÇÃO E CORREÇÃO DE ARGUMENTOS ---
+# --- CONEXÃO COM GOOGLE SHEETS: HIGIENIZAÇÃO FINAL ---
 try:
-    # 1. Carrega os segredos
+    # 1. Carrega os segredos do TOML
     creds = dict(st.secrets["connections"]["gsheets"])
     
-    # 2. Limpeza da chave privada (Anti-Padding)
-    pk = creds["private_key"]
+    # 2. Armazena a URL da planilha separadamente
+    url_planilha = creds.get("spreadsheet", "")
+    
+    # 3. Limpeza da chave privada (Anti-Padding)
+    pk = creds.get("private_key", "")
     pk = pk.replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "")
     pk = pk.replace(" ", "").replace("\n", "").replace("\r", "").replace("\\n", "")
     pk_formatada = "\n".join(textwrap.wrap(pk, 64))
     creds["private_key"] = f"-----BEGIN PRIVATE KEY-----\n{pk_formatada}\n-----END PRIVATE KEY-----\n"
     
-    # 3. REMOÇÃO DO CONFLITO: Removemos 'type' do dicionário pois ele será passado explicitamente
-    if "type" in creds:
-        del creds["type"]
+    # 4. REMOÇÃO DE CONFLITOS: Limpa chaves que não pertencem à autenticação da conta
+    for chave in ["type", "spreadsheet"]:
+        if chave in creds:
+            del creds[chave]
     
-    # 4. Estabelece a conexão
-    conn = st.connection("gsheets", type=GSheetsConnection, **creds)
+    # 5. Estabelece a conexão passando a URL e as credenciais limpas
+    conn = st.connection("gsheets", type=GSheetsConnection, spreadsheet=url_planilha, **creds)
 
 except Exception as e:
     st.error(f"Erro na preparação das credenciais: {e}")
-    # Fallback para tentativa padrão caso a higienização falhe
     conn = st.connection("gsheets", type=GSheetsConnection)
 
 # --- MAPEAMENTO DE CURSOS ---
