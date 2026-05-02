@@ -9,8 +9,13 @@ from PIL import Image
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
 # --- CONEXÃO COM GOOGLE SHEETS ---
-# Agora usamos a conexão nativa que lerá automaticamente o seu JSON dos Secrets
-conn = st.connection("gsheets", type=GSheetsConnection)
+# Ajuste de especialista: Forçamos o desempacotamento dos segredos para garantir a autenticação
+try:
+    creds = st.secrets["connections"]["gsheets"]
+    conn = st.connection("gsheets", type=GSheetsConnection, **creds)
+except Exception as e:
+    st.error(f"Erro na configuração das credenciais: {e}")
+    conn = st.connection("gsheets", type=GSheetsConnection)
 
 # --- MAPEAMENTO DE CURSOS ---
 dados_cursos = {
@@ -71,7 +76,7 @@ with col_f2:
 if btn_enviar:
     if nome and area_sel != "Selecione..." and curso_sel != "Selecione...":
         try:
-            # 1. Lê a planilha usando a conexão autenticada (O jeito correto)
+            # 1. Lê a planilha usando a conexão autenticada
             df_atual = conn.read()
             
             # 2. Criar o novo registro
@@ -84,7 +89,7 @@ if btn_enviar:
             # 3. Concatenar
             df_final = pd.concat([df_atual, novo_lead], ignore_index=True)
             
-            # 4. Gravar de volta (Agora o conn já sabe as credenciais pelos Secrets)
+            # 4. Gravar de volta
             conn.update(data=df_final)
             
             st.success(f"Sucesso, {nome}! Seu interesse foi registrado.")
@@ -99,18 +104,20 @@ st.sidebar.title("🔒 Admin")
 senha_adm = st.sidebar.text_input("Senha", type="password")
 if senha_adm == "senai122":
     # Lendo dados para o Admin
-    df_leads = conn.read()
-    if not df_leads.empty:
-        # Tenta converter a data para ordenação, se falhar mantém original
-        try:
-            df_leads['data_dt'] = pd.to_datetime(df_leads['data'], format="%d/%m/%Y %H:%M:%S", errors='coerce')
-            df_leads = df_leads.sort_values(by='data_dt', ascending=False).drop(columns=['data_dt'])
-        except:
-            pass
-        
-        if st.sidebar.checkbox("Ver Interessados"):
-            st.write("### 📊 Relatório (Ordenado por Data)")
-            st.dataframe(df_leads)
-        
-        csv_data = df_leads.to_csv(index=False).encode('utf-8-sig')
-        st.sidebar.download_button("📥 Baixar Planilha", csv_data, "leads_senai.csv", "text/csv")
+    try:
+        df_leads = conn.read()
+        if not df_leads.empty:
+            try:
+                df_leads['data_dt'] = pd.to_datetime(df_leads['data'], format="%d/%m/%Y %H:%M:%S", errors='coerce')
+                df_leads = df_leads.sort_values(by='data_dt', ascending=False).drop(columns=['data_dt'])
+            except:
+                pass
+            
+            if st.sidebar.checkbox("Ver Interessados"):
+                st.write("### 📊 Relatório (Ordenado por Data)")
+                st.dataframe(df_leads)
+            
+            csv_data = df_leads.to_csv(index=False).encode('utf-8-sig')
+            st.sidebar.download_button("📥 Baixar Planilha", csv_data, "leads_senai.csv", "text/csv")
+    except:
+        st.sidebar.warning("Aguardando conexão com a planilha...")
