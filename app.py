@@ -7,64 +7,60 @@ from datetime import datetime
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
 # --- BANCO DE DADOS ---
-conn = sqlite3.connect('senai_database.db', check_same_thread=False)
+conn = sqlite3.connect('senai_guarulhos_database.db', check_same_thread=False)
 c = conn.cursor()
 c.execute('''CREATE TABLE IF NOT EXISTS leads 
-             (nome TEXT, email TEXT, whatsapp TEXT, area TEXT, curso TEXT, data TEXT)''')
+             (nome TEXT, email TEXT, whatsapp TEXT, area TEXT, curso TEXT, sugestao TEXT, data TEXT)''')
 conn.commit()
 
-# --- ESTILO SENAI (CSS) ---
+# --- ESTILO CSS ---
 st.markdown("""
     <style>
-    .main { background-color: #ffffff; }
-    div.stButton > button {
-        background-color: #ff0000 !important;
-        color: white !important;
-        border-radius: 8px !important;
-        width: 100% !important;
-        height: 3em !important;
-        font-weight: bold !important;
-    }
     .header-senai {
         background-color: #ff0000;
-        padding: 20px;
-        border-radius: 10px;
+        padding: 25px;
+        border-radius: 12px;
         color: white;
         text-align: center;
-        margin-bottom: 25px;
+        margin-bottom: 30px;
     }
-    label { font-weight: bold !important; color: #333 !important; }
+    div.stButton > button {
+        background-color: #000000 !important;
+        color: white !important;
+        font-weight: bold !important;
+        width: 100% !important;
+        height: 3.5em !important;
+        border-radius: 8px !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# --- DICIONÁRIO DE CURSOS (ATUALIZADO SENAI GUARULHOS) ---
+# --- DICIONÁRIO DE CURSOS OFICIAL (SENAI GUARULHOS) ---
 dados_cursos = {
     "Administração e Gestão": [
-        "Técnico em Administração", "Assistente de Recursos Humanos", 
-        "Assistente Financeiro", "Analista da Qualidade", "Dashboard em Excel"
+        "Almoxarife", "Assistente Administrativo", "Assistente de Recursos Humanos", 
+        "Assistente Financeiro", "Liderança e Gestão de Equipes", "Logística Reversa"
     ],
     "Alimentos e Bebidas": [
-        "Fabricação de Pães e Doces", "Confeiteiro", "Padeiro"
+        "Confeiteiro", "Padeiro", "Fabricação de Pizzas", "Fabricação de Pães Doces", "Chocolateiro"
     ],
     "Automotiva": [
-        "Mecânico de Motocicletas", "Lubrificação Automotiva", "Mecânico de Automóveis Leves"
+        "Mecânico de Automóveis Leves", "Mecânico de Motocicletas", "Eletricista Automotivo"
     ],
-    "Eletroeletrônica e Energia": [
-        "Eletricista de Manutenção Eletroeletrônica", "Comandos Elétricos", 
-        "Eletricista Instalador", "Energia Solar Fotovoltaica"
+    "Eletroeletrônica": [
+        "Eletricista Instalador", "Comandos Elétricos", "CLP - Controladores Lógicos", "Energia Solar Fotovoltaica"
     ],
-    "Logística e Transporte": [
-        "Técnico em Logística", "Operador de Logística", "Analista de Logística", "Almoxarife"
+    "Logística": [
+        "Técnico em Logística", "Operador de Empilhadeira (NR11)", "Operador de Paleteira Elétrica", "Gestão de Estoques"
     ],
     "Metalmecânica": [
-        "Mecânico de Usinagem", "Ferramenteiro de Corte e Dobra", 
-        "Torneiro Mecânico", "Ajustador Mecânico", "Inspetor de Qualidade"
+        "Mecânico de Usinagem", "Torneiro Mecânico", "Soldador MAG", "Soldador TIG", "Ajustador Mecânico", "Caldeireiro"
     ],
     "Tecnologia da Informação": [
-        "Técnico em Desenvolvimento de Sistemas", "Técnico em Informática", "Excel Avançado"
+        "Técnico em Desenvolvimento de Sistemas", "Excel Avançado", "Power BI", "Informática Básica"
     ],
-    "Segurança do Trabalho (NRs)": [
-        "NR-10 Segurança em Eletricidade", "NR-11 Operação de Empilhadeira", "NR-35 Trabalho em Altura"
+    "Segurança do Trabalho": [
+        "NR-10", "NR-35 (Trabalho em Altura)", "NR-12"
     ]
 }
 
@@ -74,42 +70,53 @@ st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - 
 col1, col2, col3 = st.columns([1, 2, 1])
 
 with col2:
-    st.subheader("📋 Cadastro de Reserva")
+    st.write("### 📋 Cadastro de Reserva")
     
-    # --- CAMPOS FORA DO FORM PARA SEREM DINÂMICOS ---
-    area_selecionada = st.selectbox("1. Escolha a Área de Interesse", list(dados_cursos.keys()))
-    curso_selecionado = st.selectbox("2. Escolha o Curso", dados_cursos[area_selecionada])
+    # Seleção de Área e Curso (Dinâmicos)
+    area_sel = st.selectbox("1. Selecione a Área de Interesse:", ["Selecione..."] + list(dados_cursos.keys()))
     
-    # --- FORMULÁRIO APENAS PARA DADOS PESSOAIS ---
-    with st.form("cadastro_pessoal", clear_on_submit=True):
+    lista_cursos = dados_cursos[area_sel] if area_sel != "Selecione..." else []
+    curso_sel = st.selectbox("2. Selecione o Curso:", ["Selecione..."] + lista_cursos)
+
+    # Formulário de Dados
+    with st.form("form_leads", clear_on_submit=True):
         nome = st.text_input("Nome Completo")
-        email = st.text_input("E-mail para contato")
+        email = st.text_input("E-mail")
         whatsapp = st.text_input("WhatsApp (com DDD)")
         
-        btn_enviar = st.form_submit_button("REGISTRAR MEU INTERESSE")
+        st.write("---")
+        sugestao = st.text_area("Não encontrou o curso? Sugira aqui ou deixe uma observação:", 
+                                placeholder="Ex: Gostaria de saber sobre o curso de Robótica...")
         
-        if btn_enviar:
-            if nome and email and whatsapp:
-                data_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                c.execute("INSERT INTO leads VALUES (?, ?, ?, ?, ?, ?)", 
-                          (nome, email, whatsapp, area_selecionada, curso_selecionado, data_hora))
+        enviado = st.form_submit_button("REGISTRAR INTERESSE")
+        
+        if enviado:
+            if nome and email and whatsapp and area_sel != "Selecione..." and curso_sel != "Selecione...":
+                data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                
+                # Salva no Banco de Dados
+                c.execute("INSERT INTO leads VALUES (?, ?, ?, ?, ?, ?, ?)", 
+                          (nome, email, whatsapp, area_sel, curso_sel, sugestao, data_atual))
                 conn.commit()
-                st.success(f"Sucesso! {nome}, registramos seu interesse em {curso_selecionado}.")
+                
+                # Resposta conforme solicitado
+                st.success(f"Obrigado, {nome}!")
+                st.info("Assim que o curso for liberado, ou caso já exista uma turma disponível para o seu interesse, nossa equipe entrará em contato com você imediatamente através dos dados informados.")
                 st.balloons()
             else:
-                st.error("Por favor, preencha todos os campos antes de enviar.")
+                st.error("Por favor, preencha todos os dados e selecione a área e o curso.")
 
-# --- ÁREA ADMIN ---
-st.sidebar.markdown("---")
+# --- PAINEL ADMIN ---
 st.sidebar.title("🔒 Administrativo")
-acesso = st.sidebar.text_input("Senha de Acesso", type="password")
+senha = st.sidebar.text_input("Senha", type="password")
 
-if acesso == "senai122":
-    st.sidebar.success("Acesso Autorizado")
-    if st.sidebar.button("📊 Ver Lista de Interessados"):
-        st.write("### Relatório de Leads")
+if senha == "senai122":
+    st.sidebar.success("Acesso Liberado")
+    if st.sidebar.checkbox("Ver Interessados"):
         df = pd.read_sql_query("SELECT * FROM leads", conn)
+        st.write("### Lista de Candidatos")
         st.dataframe(df)
         
+        # Download para o setor administrativo
         csv = df.to_csv(index=False).encode('utf-8-sig')
-        st.download_button("📥 Baixar Planilha Excel (CSV)", csv, "interessados_senai.csv", "text/csv")
+        st.sidebar.download_button("Baixar Planilha Excel", csv, "interessados_senai.csv", "text/csv")
