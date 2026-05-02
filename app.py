@@ -10,7 +10,7 @@ st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout=
 
 # --- CONEXÃO COM GOOGLE SHEETS ---
 # Use o URL da sua planilha aqui
-url_planilha = "COLE_AQUI_O_URL_DA_SUA_PLANILHA"
+url_planilha = "https://docs.google.com/spreadsheets/d/1sZGFkC_09jzG_nNUuMZ5tXSdXptvo_o2/edit?gid=1419719135#gid=1419719135"
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 # --- MAPEAMENTO DE CURSOS ---
