@@ -9,8 +9,7 @@ from PIL import Image
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
 # --- CONEXÃO COM GOOGLE SHEETS ---
-# Puxa o link limpo que você acabou de salvar nos Secrets
-url_planilha = st.secrets["connections"]["gsheets"]["spreadsheet"]
+# Agora usamos a conexão nativa que lerá automaticamente o seu JSON dos Secrets
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 # --- MAPEAMENTO DE CURSOS ---
@@ -68,53 +67,50 @@ with col_f2:
         whats = st.text_input("WhatsApp (com DDD)")
         sugestao = st.text_area("Sugestão de curso ou observação:")
         btn_enviar = st.form_submit_button("REGISTRAR INTERESSE")
-        
+
 if btn_enviar:
-            if nome and area_sel != "Selecione..." and curso_sel != "Selecione...":
-                try:
-                    # 1. Preparar o link de exportação CSV para leitura
-                    # Isso pula a biblioteca do Streamlit e lê o Google Sheets direto
-                    csv_url = url_planilha.replace('/edit', '/export?format=csv')
-                    
-                    try:
-                        df_atual = pd.read_csv(csv_url)
-                    except:
-                        df_atual = pd.DataFrame(columns=["nome", "email", "whatsapp", "area", "curso", "sugestao", "data"])
+    if nome and area_sel != "Selecione..." and curso_sel != "Selecione...":
+        try:
+            # 1. Lê a planilha usando a conexão autenticada (O jeito correto)
+            df_atual = conn.read()
+            
+            # 2. Criar o novo registro
+            novo_lead = pd.DataFrame([{
+                "nome": nome, "email": email, "whatsapp": whats,
+                "area": area_sel, "curso": curso_sel, "sugestao": sugestao,
+                "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            }])
 
-                    # 2. Criar o novo registro
-                    novo_lead = pd.DataFrame([{
-                        "nome": nome, "email": email, "whatsapp": whats,
-                        "area": area_sel, "curso": curso_sel, "sugestao": sugestao,
-                        "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                    }])
+            # 3. Concatenar
+            df_final = pd.concat([df_atual, novo_lead], ignore_index=True)
+            
+            # 4. Gravar de volta (Agora o conn já sabe as credenciais pelos Secrets)
+            conn.update(data=df_final)
+            
+            st.success(f"Sucesso, {nome}! Seu interesse foi registrado.")
+            st.balloons()
+        except Exception as e:
+            st.error(f"Erro ao salvar: {str(e)}")
+    else:
+        st.error("Por favor, preencha nome, área e curso.")
 
-                    # 3. Concatenar
-                    df_final = pd.concat([df_atual, novo_lead], ignore_index=True)
-                    
-                    # 4. Gravar de volta usando a conexão (ou mostrar erro específico)
-                    conn.update(spreadsheet=url_planilha, data=df_final)
-                    
-                    st.success(f"Sucesso, {nome}! Seu interesse foi registrado.")
-                    st.balloons()
-                except Exception as e:
-                    # Se ainda assim der erro, vamos mostrar o erro real do Python para depurarmos
-                    st.error(f"Erro ao salvar: {str(e)}")
-            else:
-                st.error("Por favor, preencha nome, área e curso.")
-                
 # --- PAINEL ADMINISTRATIVO ---
 st.sidebar.title("🔒 Admin")
 senha_adm = st.sidebar.text_input("Senha", type="password")
 if senha_adm == "senai122":
-    # Lendo e ordenando pela data mais recente
-    df_leads = conn.read(spreadsheet=url_planilha)
+    # Lendo dados para o Admin
+    df_leads = conn.read()
     if not df_leads.empty:
-        df_leads['data_dt'] = pd.to_datetime(df_leads['data'], format="%d/%m/%Y %H:%M:%S", errors='coerce')
-        df_leads = df_leads.sort_values(by='data_dt', ascending=False).drop(columns=['data_dt'])
+        # Tenta converter a data para ordenação, se falhar mantém original
+        try:
+            df_leads['data_dt'] = pd.to_datetime(df_leads['data'], format="%d/%m/%Y %H:%M:%S", errors='coerce')
+            df_leads = df_leads.sort_values(by='data_dt', ascending=False).drop(columns=['data_dt'])
+        except:
+            pass
         
-    if st.sidebar.checkbox("Ver Interessados"):
-        st.write("### 📊 Relatório (Ordenado por Data)")
-        st.dataframe(df_leads)
-    
-    csv_data = df_leads.to_csv(index=False).encode('utf-8-sig')
-    st.sidebar.download_button("📥 Baixar Planilha", csv_data, "leads_senai.csv", "text/csv")
+        if st.sidebar.checkbox("Ver Interessados"):
+            st.write("### 📊 Relatório (Ordenado por Data)")
+            st.dataframe(df_leads)
+        
+        csv_data = df_leads.to_csv(index=False).encode('utf-8-sig')
+        st.sidebar.download_button("📥 Baixar Planilha", csv_data, "leads_senai.csv", "text/csv")
