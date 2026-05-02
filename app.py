@@ -8,33 +8,18 @@ from PIL import Image
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- CONEXÃO COM GOOGLE SHEETS: MÉTODO MANUAL DIRETO ---
-def obter_conexao():
+# --- CONEXÃO COM GOOGLE SHEETS: SOLUÇÃO DE BYPASS TOTAL ---
+@st.cache_resource
+def iniciar_conexao():
     try:
-        # Buscamos os valores brutos dos Secrets
-        secrets_dict = st.secrets["connections"]["gsheets"]
-        
-        # Criamos a conexão passando APENAS o necessário, sem desempacotar o dicionário inteiro
-        # Isso evita que argumentos inesperados como 'spreadsheet' ou 'type' quebrem a função
-        return st.connection(
-            "gsheets",
-            type=GSheetsConnection,
-            spreadsheet=secrets_dict.get("spreadsheet"),
-            project_id=secrets_dict.get("project_id"),
-            private_key_id=secrets_dict.get("private_key_id"),
-            private_key=secrets_dict.get("private_key"),
-            client_email=secrets_dict.get("client_email"),
-            client_id=secrets_dict.get("client_id"),
-            auth_uri=secrets_dict.get("auth_uri"),
-            token_uri=secrets_dict.get("token_uri"),
-            auth_provider_x509_cert_url=secrets_dict.get("auth_provider_x509_cert_url"),
-            client_x509_cert_url=secrets_dict.get("client_x509_cert_url")
-        )
-    except Exception as e:
-        st.error(f"Erro na conexão manual: {e}")
+        # Criamos a conexão sem passar NENHUM argumento extra no construtor
+        # Deixamos a biblioteca ler os segredos puramente pelo ambiente
         return st.connection("gsheets", type=GSheetsConnection)
+    except Exception as e:
+        st.error(f"Erro ao inicializar driver: {e}")
+        return None
 
-conn = obter_conexao()
+conn = iniciar_conexao()
 
 # --- MAPEAMENTO DE CURSOS ---
 dados_cursos = {
@@ -59,7 +44,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- IMAGENS (Logo e Fachada) ---
+# --- CABEÇALHO ---
 path_logo = os.path.join("imagens", "logo.png")
 if os.path.exists(path_logo):
     col_l1, col_l2, col_l3 = st.columns([2, 1, 2])
@@ -93,37 +78,39 @@ with col_f2:
         btn_enviar = st.form_submit_button("REGISTRAR INTERESSE")
 
 if btn_enviar:
-    if nome and area_sel != "Selecione..." and curso_sel != "Selecione...":
+    if nome and area_sel != "Selecione..." and curso_sel != "Selecione..." and conn:
         try:
-            # Operação de I/O na planilha
-            df_atual = conn.read()
+            # AQUI ESTÁ O SEGREDO: Passamos a URL apenas no momento da LEITURA
+            url_planilha = st.secrets["connections"]["gsheets"]["spreadsheet"]
+            
+            df_atual = conn.read(spreadsheet=url_planilha)
+            
             novo_lead = pd.DataFrame([{
                 "nome": nome, "email": email, "whatsapp": whats,
                 "area": area_sel, "curso": curso_sel, "sugestao": sugestao,
                 "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             }])
+            
             df_final = pd.concat([df_atual, novo_lead], ignore_index=True)
-            conn.update(data=df_final)
+            
+            # E passamos a URL novamente no momento do UPDATE
+            conn.update(spreadsheet=url_planilha, data=df_final)
             
             st.success(f"Sucesso, {nome}! Seu interesse foi registrado.")
             st.balloons()
         except Exception as e:
-            st.error(f"Erro ao salvar na planilha: {str(e)}")
+            st.error(f"Erro na operação: {e}")
     else:
-        st.error("Por favor, preencha nome, área e curso.")
+        st.error("Preencha todos os campos obrigatórios.")
 
-# --- PAINEL ADMINISTRATIVO ---
+# --- ADMIN ---
 st.sidebar.title("🔒 Admin")
 senha_adm = st.sidebar.text_input("Senha", type="password")
-if senha_adm == "senai122":
+if senha_adm == "senai122" and conn:
     try:
-        df_leads = conn.read()
-        if not df_leads.empty:
-            if st.sidebar.checkbox("Ver Interessados"):
-                st.write("### 📊 Relatório")
-                st.dataframe(df_leads)
-            
-            csv_data = df_leads.to_csv(index=False).encode('utf-8-sig')
-            st.sidebar.download_button("📥 Baixar Planilha", csv_data, "leads_senai.csv", "text/csv")
-    except Exception as e:
-        st.sidebar.warning(f"Aguardando dados... ({e})")
+        url_planilha = st.secrets["connections"]["gsheets"]["spreadsheet"]
+        df_leads = conn.read(spreadsheet=url_planilha)
+        if st.sidebar.checkbox("Ver Interessados"):
+            st.dataframe(df_leads)
+    except:
+        st.sidebar.write("Aguardando registros...")
