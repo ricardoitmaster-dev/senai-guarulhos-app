@@ -4,35 +4,34 @@ import pandas as pd
 from datetime import datetime
 import os
 from PIL import Image
-import textwrap  # Importante: Biblioteca nativa para reconstruir o texto
+import textwrap
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- CONEXÃO COM GOOGLE SHEETS: SOLUÇÃO DEFINITIVA (ANTI-PADDING) ---
+# --- CONEXÃO COM GOOGLE SHEETS: HIGIENIZAÇÃO E CORREÇÃO DE ARGUMENTOS ---
 try:
-    # 1. Copia as credenciais do Secrets para um dicionário mutável
+    # 1. Carrega os segredos
     creds = dict(st.secrets["connections"]["gsheets"])
     
-    # 2. Extrai a chave privada crua, do jeito que veio do TOML
+    # 2. Limpeza da chave privada (Anti-Padding)
     pk = creds["private_key"]
-    
-    # 3. Limpeza pesada: arranca cabeçalhos, rodapés, espaços e quebras de linha invisíveis
-    pk = pk.replace("-----BEGIN PRIVATE KEY-----", "")
-    pk = pk.replace("-----END PRIVATE KEY-----", "")
+    pk = pk.replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "")
     pk = pk.replace(" ", "").replace("\n", "").replace("\r", "").replace("\\n", "")
-    
-    # 4. Reconstrói o PEM perfeito (exatamente 64 caracteres por linha, padrão criptográfico)
     pk_formatada = "\n".join(textwrap.wrap(pk, 64))
     creds["private_key"] = f"-----BEGIN PRIVATE KEY-----\n{pk_formatada}\n-----END PRIVATE KEY-----\n"
     
-    # 5. Entrega as credenciais higienizadas para a biblioteca
+    # 3. REMOÇÃO DO CONFLITO: Removemos 'type' do dicionário pois ele será passado explicitamente
+    if "type" in creds:
+        del creds["type"]
+    
+    # 4. Estabelece a conexão
     conn = st.connection("gsheets", type=GSheetsConnection, **creds)
 
 except Exception as e:
     st.error(f"Erro na preparação das credenciais: {e}")
+    # Fallback para tentativa padrão caso a higienização falhe
     conn = st.connection("gsheets", type=GSheetsConnection)
-
 
 # --- MAPEAMENTO DE CURSOS ---
 dados_cursos = {
@@ -57,7 +56,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- IMAGENS (CAMINHO RELATIVO GITHUB) ---
+# --- IMAGENS ---
 path_logo = os.path.join("imagens", "logo.png")
 if os.path.exists(path_logo):
     col_l1, col_l2, col_l3 = st.columns([2, 1, 2])
@@ -93,22 +92,14 @@ with col_f2:
 if btn_enviar:
     if nome and area_sel != "Selecione..." and curso_sel != "Selecione...":
         try:
-            # 1. Lê a planilha usando a conexão autenticada
             df_atual = conn.read()
-            
-            # 2. Criar o novo registro
             novo_lead = pd.DataFrame([{
                 "nome": nome, "email": email, "whatsapp": whats,
                 "area": area_sel, "curso": curso_sel, "sugestao": sugestao,
                 "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             }])
-
-            # 3. Concatenar
             df_final = pd.concat([df_atual, novo_lead], ignore_index=True)
-            
-            # 4. Gravar de volta
             conn.update(data=df_final)
-            
             st.success(f"Sucesso, {nome}! Seu interesse foi registrado.")
             st.balloons()
         except Exception as e:
