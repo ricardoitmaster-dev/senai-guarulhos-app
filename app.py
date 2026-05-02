@@ -72,35 +72,35 @@ with col_f2:
 if btn_enviar:
             if nome and area_sel != "Selecione..." and curso_sel != "Selecione...":
                 try:
-                    # Cria o novo lead
-                    novo_row = {
-                        "nome": [nome],
-                        "email": [email],
-                        "whatsapp": [whats],
-                        "area": [area_sel],
-                        "curso": [curso_sel],
-                        "sugestao": [sugestao],
-                        "data": [datetime.now().strftime("%d/%m/%Y %H:%M:%S")]
-                    }
-                    df_novo = pd.DataFrame(novo_row)
-
-                    # Tenta ler os dados existentes
+                    # 1. Preparar o link de exportação CSV para leitura
+                    # Isso pula a biblioteca do Streamlit e lê o Google Sheets direto
+                    csv_url = url_planilha.replace('/edit', '/export?format=csv')
+                    
                     try:
-                        df_antigo = conn.read(spreadsheet=url_planilha, usecols=[0,1,2,3,4,5,6])
-                        df_final = pd.concat([df_antigo, df_novo], ignore_index=True)
+                        df_atual = pd.read_csv(csv_url)
                     except:
-                        # Se a planilha estiver vazia ou der erro na leitura, usa só o novo
-                        df_final = df_novo
+                        df_atual = pd.DataFrame(columns=["nome", "email", "whatsapp", "area", "curso", "sugestao", "data"])
 
-                    # Comando de atualização direta
+                    # 2. Criar o novo registro
+                    novo_lead = pd.DataFrame([{
+                        "nome": nome, "email": email, "whatsapp": whats,
+                        "area": area_sel, "curso": curso_sel, "sugestao": sugestao,
+                        "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                    }])
+
+                    # 3. Concatenar
+                    df_final = pd.concat([df_atual, novo_lead], ignore_index=True)
+                    
+                    # 4. Gravar de volta usando a conexão (ou mostrar erro específico)
                     conn.update(spreadsheet=url_planilha, data=df_final)
                     
-                    st.success(f"Obrigado, {nome}! Seu interesse foi registrado!")
+                    st.success(f"Sucesso, {nome}! Seu interesse foi registrado.")
                     st.balloons()
                 except Exception as e:
-                    st.error(f"Erro de conexão com o Google: Verifique se a planilha permite edição pública.")
+                    # Se ainda assim der erro, vamos mostrar o erro real do Python para depurarmos
+                    st.error(f"Erro ao salvar: {str(e)}")
             else:
-                st.error("Por favor, selecione a Área e o Curso.")
+                st.error("Por favor, preencha nome, área e curso.")
                 
 # --- PAINEL ADMINISTRATIVO ---
 st.sidebar.title("🔒 Admin")
