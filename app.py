@@ -38,7 +38,6 @@ st.markdown("""
 # --- SCRAPING DINÂMICO ---
 @st.cache_data(ttl=43200)
 def buscar_cursos_dinamicos():
-    # Chave obtida no ScraperAPI conforme verificado anteriormente
     api_key = "3e14f4393c5a034104b37c071a0d021f" 
     url_alvo = "https://www.sp.senai.br/cursos?unidade=122"
     
@@ -70,8 +69,7 @@ def buscar_cursos_dinamicos():
     except:
         return mapa_fallback
 
-# --- INTEGRAÇÃO GOOGLE SHEETS (CORRIGIDA) ---
-@st.cache_resource
+# --- INTEGRAÇÃO GOOGLE SHEETS (SEM CACHE PARA EVITAR BROKEN PIPE) ---
 def conectar_google_sheets():
     try:
         s = st.secrets["connections"]["gsheets"]
@@ -85,16 +83,20 @@ def conectar_google_sheets():
             "client_x509_cert_url": s["client_x509_cert_url"]
         }
         creds = service_account.Credentials.from_service_account_info(info, scopes=["https://www.googleapis.com/auth/spreadsheets"])
-        return build("sheets", "v4", credentials=creds)
-    except: return None
+        # Retorna uma nova conexão a cada chamada
+        return build("sheets", "v4", credentials=creds, cache_discovery=False)
+    except Exception as e:
+        st.error(f"Erro de Conexão Google: {e}")
+        return None
 
 def salvar_novo_lead(lista_dados):
     try:
         service = conectar_google_sheets()
+        if service is None: return False
+        
         url = st.secrets["connections"]["gsheets"]["spreadsheet"]
         sheet_id = url.split("/d/")[1].split("/")[0]
         
-        # Correção: Usando INSERT_ROWS para adicionar e não substituir
         service.spreadsheets().values().append(
             spreadsheetId=sheet_id,
             range="A1", 
@@ -104,12 +106,14 @@ def salvar_novo_lead(lista_dados):
         ).execute()
         return True
     except Exception as e:
-        st.error(f"Erro ao salvar: {e}")
+        st.error(f"Erro ao salvar (Broken Pipe ou Timeout): {e}")
         return False
 
 def ler_todos_leads():
     try:
         service = conectar_google_sheets()
+        if service is None: return pd.DataFrame()
+        
         url = st.secrets["connections"]["gsheets"]["spreadsheet"]
         sheet_id = url.split("/d/")[1].split("/")[0]
         result = service.spreadsheets().values().get(spreadsheetId=sheet_id, range="A1:Z2000").execute()
@@ -144,7 +148,6 @@ with col_f2:
     if btn_enviar:
         if area_escolhida != "Selecione..." and nome and email:
             data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            # Salva na planilha sem sobrescrever
             if salvar_novo_lead([nome, email, whats, area_escolhida, curso_escolhido, data_atual]):
                 st.success(f"Sucesso! {nome}, recebemos seu interesse.")
                 st.balloons()
@@ -153,7 +156,7 @@ with col_f2:
 # --- ADM ---
 st.sidebar.markdown("## 🔒 Admin")
 senha = st.sidebar.text_input("Senha", type="password")
-if senha == "Celina2610$$": # Senha conforme seu padrão histórico
+if senha == "Celina2610$$":
     if st.sidebar.checkbox("Ver Leads"):
         df = ler_todos_leads()
         if not df.empty: st.dataframe(df)
