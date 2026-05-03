@@ -20,11 +20,6 @@ st.markdown("""
         padding: 30px; border-radius: 20px; color: white; text-align: center; 
         box-shadow: 0 15px 25px -5px rgba(227, 0, 15, 0.4); margin-bottom: 20px;
     }
-    .img-escola {
-        border-radius: 15px;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        margin-bottom: 30px;
-    }
     [data-testid="stForm"] {
         background: rgba(255, 255, 255, 0.4) !important;
         backdrop-filter: blur(15px) saturate(180%) !important;
@@ -92,17 +87,18 @@ def ler_todos_leads():
 # --- CABEÇALHO ---
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse</p></div>', unsafe_allow_html=True)
 
-# --- EXIBIÇÃO DA IMAGEM DA ESCOLA (CORRIGIDA) ---
+# --- EXIBIÇÃO DA IMAGEM DA ESCOLA (CORREÇÃO DA IMAGEM QUEBRADA) ---
 c_img1, c_img2, c_img3 = st.columns([1, 4, 1])
 with c_img2:
-    # Tentativa 1: Arquivo local (imagens/frente_escola.png)
-    path_escola = os.path.join("imagens", "frente_escola.png")
-    if os.path.exists(path_escola):
-        st.image(Image.open(path_escola), use_container_width=True, caption="Unidade SENAI Guarulhos 122")
-    else:
-        # Tentativa 2: URL Direta (Substitua este link pela URL da foto da escola se tiver uma)
-        # Usei uma imagem padrão do SENAI como exemplo caso a sua suma
-        st.image("https://guarulhos.sp.senai.br/institucional/3611/0/unidade-guarulhos", use_container_width=True, caption="SENAI Guarulhos - Unidade 122")
+    # URL da fachada oficial do SENAI
+    url_fachada = "https://sp.senai.br/unidades/guarulhos/image/unidade-guarulhos.jpg"
+    
+    # Tentativa de carregar a imagem de forma segura
+    try:
+        st.image(url_fachada, use_container_width=True, caption="Unidade SENAI Guarulhos 122")
+    except:
+        # Se o link falhar, ele apenas mostra um aviso discreto em vez do ícone de erro
+        st.info("Aguardando carregamento da imagem da unidade...")
 
 # --- INTERFACE PRINCIPAL ---
 dados_cursos = buscar_cursos_dinamicos()
@@ -125,10 +121,10 @@ with col_f2:
         if area_escolhida != "Selecione..." and curso_escolhido != "Aguardando área..." and nome and email:
             data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             if salvar_novo_lead([nome, email, whats, area_escolhida, curso_escolhido, data_atual]):
-                st.success(f"✅ Olá {nome}! Registro concluído para o curso de {curso_escolhido}. Entraremos em contato em breve!")
+                st.success(f"✅ Olá {nome}! Registro concluído para o curso de {curso_escolhido}. Retornaremos assim que as turmas forem abertas!")
                 st.balloons()
             else:
-                st.error("Erro ao salvar os dados.")
+                st.error("Erro ao salvar os dados no Google Sheets.")
         else:
             st.warning("⚠️ Preencha todos os campos corretamente.")
 
