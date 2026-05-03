@@ -12,33 +12,44 @@ import base64
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# Função para converter imagem local em base64 (necessário para o HTML/CSS encontrar a imagem)
+# Função para converter imagem local em base64
 def get_base64_of_bin_file(bin_file):
     with open(bin_file, 'rb') as f:
         data = f.read()
     return base64.b64encode(data).decode()
 
-# --- CSS: ESTILO 3D AVANÇADO E LINKS ---
+# --- CSS: ESTILO 3D E FAIXA FULL-WIDTH ---
 st.markdown("""
     <style>
     /* Fundo Neumórfico */
     .stApp { background-color: #e0e5ec; }
     
-    /* Cabeçalho 3D Suave */
+    /* FAIXA VERMELHA LARGURA TOTAL */
     .header-senai { 
         background: #ff0000; 
-        padding: 15px;
-        border-radius: 20px;
+        padding: 25px 0px;
         color: white; 
         text-align: center; 
-        margin: 10px auto 25px auto;
-        max-width: 90%;
-        box-shadow: 7px 7px 14px #b8b9be, -7px -7px 14px #ffffff;
-        border: 1px solid rgba(255,255,255,0.2);
+        width: 100vw; /* Ocupa a largura total da janela */
+        position: relative;
+        left: 50%;
+        right: 50%;
+        margin-left: -50vw;
+        margin-right: -50vw;
+        margin-top: -50px; /* Ajuste para subir e encostar no topo se necessário */
+        margin-bottom: 30px;
+        box-shadow: 0px 10px 15px rgba(0,0,0,0.1);
+        border-bottom: 4px solid #cc0000;
     }
-    .header-senai h1 { font-size: 24px !important; margin-bottom: 0px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+    .header-senai h1 { 
+        font-size: 28px !important; 
+        margin: 0; 
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        font-weight: 800;
+    }
+    .header-senai p { font-size: 16px !important; margin: 5px 0 0 0; opacity: 0.9; }
 
-    /* Container das Imagens/Links */
+    /* Efeito de Botão 3D nas Imagens */
     .img-3d-link {
         display: block;
         margin: auto;
@@ -48,25 +59,19 @@ st.markdown("""
         overflow: hidden;
         width: fit-content;
     }
-    
-    /* Efeito de Botão 3D nas Imagens */
     .img-3d-link img {
         border-radius: 25px;
         box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff;
         transition: all 0.3s ease;
         border: 4px solid #e0e5ec;
     }
-
-    /* Efeito ao passar o mouse (Hover/Clique) */
-    .img-3d-link:hover {
-        transform: scale(0.98);
-    }
+    .img-3d-link:hover { transform: scale(0.98); }
     .img-3d-link:hover img {
         box-shadow: inset 6px 6px 12px #bebebe, inset -6px -6px 12px #ffffff;
         filter: brightness(1.1);
     }
 
-    /* Formulário Escavado (Baixo Relevo) */
+    /* Formulário Escavado */
     [data-testid="stForm"] {
         background-color: #e0e5ec !important;
         border-radius: 30px !important;
@@ -95,12 +100,11 @@ st.markdown("""
     }
     div.stButton > button:hover {
         box-shadow: 2px 2px 5px #b8b9be, -2px -2px 5px #ffffff !important;
-        transform: translateY(2px);
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- CONFIGURAÇÕES DE LINKS E CAMINHOS ---
+# --- LINKS E CAMINHOS ---
 url_senai = "https://www.sp.senai.br/cursos?unidade=122"
 path_logo = os.path.join("imagens", "logo.png")
 path_fachada = os.path.join("imagens", "fachada.jpg")
@@ -190,8 +194,13 @@ if os.path.exists(path_logo):
             </a>
         ''', unsafe_allow_html=True)
 
-# Cabeçalho
-st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse</p></div>', unsafe_allow_html=True)
+# FAIXA VERMELHA LARGURA TOTAL
+st.markdown(f'''
+    <div class="header-senai">
+        <h1>SENAI GUARULHOS</h1>
+        <p>Unidade 122 - Registro de Interesse Profissional</p>
+    </div>
+''', unsafe_allow_html=True)
 
 # 2. Fachada com Link e Efeito 3D
 if os.path.exists(path_fachada):
@@ -210,7 +219,7 @@ with st.spinner("Sincronizando cursos..."):
 # Formulário
 col_main1, col_main2, col_main3 = st.columns([1, 2, 1])
 with col_main2:
-    st.markdown("<h3 style='text-align: center; color: #333;'>📋 Cadastro de Interesse</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; color: #333; margin-top: 20px;'>📋 Cadastro de Interesse</h3>", unsafe_allow_html=True)
     
     area_sel = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
     opcoes = sorted(dados_cursos[area_sel]) if area_sel != "Selecione..." else []
