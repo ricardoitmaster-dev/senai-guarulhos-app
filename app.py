@@ -1,5 +1,5 @@
 import streamlit as st
-import pd
+import pandas as pd  # <--- Corrigido aqui
 from datetime import datetime
 import os
 import requests
@@ -60,23 +60,25 @@ st.markdown("""
     }
     .header-senai p { font-size: 16px !important; margin: 5px 0 0 0; opacity: 0.9; color: white !important; }
 
-    /* CORREÇÃO PARA SMARTPHONES: Labels e Mensagens de Sucesso */
+    /* CORREÇÃO PARA SMARTPHONES: Labels em PRETO */
     label, [data-testid="stWidgetLabel"] p {
         color: #000000 !important;
         font-weight: 600 !important;
     }
 
     /* FORÇAR COR ESCURA NA MENSAGEM DE SUCESSO (BOX VERDE) */
+    /* Resolvendo o problema da imagem WhatsApp Image 2026-05-03 at 15.45.19.jpeg */
     div[data-testid="stNotification"] {
-        background-color: #d4edda !important; /* Fundo verde claro */
-        border: 1px solid #c3e6cb !important;
+        background-color: #d4edda !important; 
+        border: 2px solid #155724 !important;
     }
     div[data-testid="stNotification"] div {
-        color: #155724 !important; /* Texto Verde Bem Escuro para contraste */
+        color: #155724 !important; 
         font-weight: 700 !important;
+        font-size: 16px !important;
     }
 
-    /* CORREÇÃO CRÍTICA DO BOTÃO PARA CELULAR */
+    /* CORREÇÃO DO BOTÃO PARA CELULAR */
     div.stButton > button { 
         background-color: #ff0000 !important;
         color: #ffffff !important; 
@@ -116,6 +118,14 @@ st.markdown("""
         border-radius: 30px !important;
         padding: 2rem !important;
         box-shadow: inset 8px 8px 16px #bebebe, inset -8px -8px 16px #ffffff !important;
+        border: none !important;
+    }
+
+    /* Inputs Neumórficos */
+    .stTextInput div[data-baseweb="input"], .stSelectbox div[data-baseweb="select"], .stTextArea div[data-baseweb="textarea"] {
+        background-color: #e0e5ec !important;
+        border-radius: 15px !important;
+        box-shadow: inset 3px 3px 6px #bebebe, inset -3px -3px 6px #ffffff !important;
         border: none !important;
     }
     </style>
