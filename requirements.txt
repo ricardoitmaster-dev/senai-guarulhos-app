@@ -3,7 +3,5 @@ pandas
 google-api-python-client
 google-auth
 requests
-beautifulsoup4
 Pillow
-selenium==4.20.0
-webdriver-manager
+playwright
