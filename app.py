@@ -18,17 +18,17 @@ def get_base64_of_bin_file(bin_file):
         data = f.read()
     return base64.b64encode(data).decode()
 
-# --- CSS: ESTILO 3D E CORREÇÃO DA LOGO/FAIXA ---
+# --- CSS: ESTILO 3D, FAIXA TOTAL E CORREÇÃO DE CORES ---
 st.markdown("""
     <style>
     /* Fundo Neumórfico */
     .stApp { background-color: #e0e5ec; }
     
-    /* Container do Logo para garantir que fique acima de tudo */
+    /* Container do Logo acima da faixa */
     .logo-container {
         position: relative;
         z-index: 10;
-        margin-bottom: -20px; /* Faz a faixa vermelha começar logo abaixo */
+        margin-bottom: -20px;
         display: flex;
         justify-content: center;
         padding-top: 10px;
@@ -37,7 +37,7 @@ st.markdown("""
     /* FAIXA VERMELHA LARGURA TOTAL */
     .header-senai { 
         background: #ff0000; 
-        padding: 40px 0px 25px 0px; /* Aumentei o padding superior */
+        padding: 40px 0px 25px 0px; 
         color: white; 
         text-align: center; 
         width: 100vw;
@@ -56,9 +56,15 @@ st.markdown("""
         margin: 0; 
         text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         font-weight: 800;
-        letter-spacing: 1px;
     }
     .header-senai p { font-size: 16px !important; margin: 5px 0 0 0; opacity: 0.9; }
+
+    /* CORREÇÃO PARA SMARTPHONES: Labels em PRETO */
+    /* Força a cor preta em todos os textos de instrução do formulário */
+    label, p, .stMarkdown, [data-testid="stWidgetLabel"] p {
+        color: #000000 !important;
+        font-weight: 600 !important;
+    }
 
     /* Efeito de Botão 3D nas Imagens */
     .img-3d-link {
@@ -86,7 +92,7 @@ st.markdown("""
     [data-testid="stForm"] {
         background-color: #e0e5ec !important;
         border-radius: 30px !important;
-        padding: 2.5rem !important;
+        padding: 2rem !important;
         box-shadow: inset 8px 8px 16px #bebebe, inset -8px -8px 16px #ffffff !important;
         border: none !important;
     }
@@ -109,13 +115,10 @@ st.markdown("""
         box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff !important;
         border: none !important;
     }
-    div.stButton > button:hover {
-        box-shadow: 2px 2px 5px #b8b9be, -2px -2px 5px #ffffff !important;
-    }
     </style>
     """, unsafe_allow_html=True)
 
-# --- LINKS E CAMINHOS ---
+# --- CONFIGURAÇÕES ---
 url_senai = "https://www.sp.senai.br/cursos?unidade=122"
 path_logo = os.path.join("imagens", "logo.png")
 path_fachada = os.path.join("imagens", "fachada.jpg")
@@ -194,7 +197,7 @@ def ler_todos_leads():
 
 # --- INTERFACE ---
 
-# 1. Logo com Link e Efeito 3D (Corrigido para ficar por cima)
+# 1. Logo
 if os.path.exists(path_logo):
     logo_base64 = get_base64_of_bin_file(path_logo)
     st.markdown(f'''
@@ -205,7 +208,7 @@ if os.path.exists(path_logo):
         </div>
     ''', unsafe_allow_html=True)
 
-# FAIXA VERMELHA LARGURA TOTAL
+# Faixa Vermelha
 st.markdown(f'''
     <div class="header-senai">
         <h1>SENAI GUARULHOS</h1>
@@ -213,7 +216,7 @@ st.markdown(f'''
     </div>
 ''', unsafe_allow_html=True)
 
-# 2. Fachada com Link e Efeito 3D
+# 2. Fachada
 if os.path.exists(path_fachada):
     fachada_base64 = get_base64_of_bin_file(path_fachada)
     c_f1, c_f2, c_f3 = st.columns([1, 6, 1])
@@ -230,7 +233,7 @@ with st.spinner("Sincronizando cursos..."):
 # Formulário
 col_main1, col_main2, col_main3 = st.columns([1, 2, 1])
 with col_main2:
-    st.markdown("<h3 style='text-align: center; color: #333; margin-top: 20px;'>📋 Cadastro de Interesse</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; margin-top: 20px;'>📋 Cadastro de Interesse</h3>", unsafe_allow_html=True)
     
     area_sel = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
     opcoes = sorted(dados_cursos[area_sel]) if area_sel != "Selecione..." else []
@@ -245,11 +248,12 @@ with col_main2:
 
         if enviar:
             if area_sel != "Selecione..." and nome and email:
-                data = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                if salvar_novo_lead([nome, email, whats, area_sel, curso_sel, obs, data]):
-                    st.success("Sucesso! Registro realizado.")
+                data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                if salvar_novo_lead([nome, email, whats, area_sel, curso_sel, obs, data_atual]):
+                    # MENSAGEM FINAL RESTAURADA
+                    st.success(f"Excelente, {nome}! Registramos seu interesse. Entraremos em contato assim que as inscrições para o curso estiverem abertas.")
                     st.balloons()
-            else: st.error("Preencha os campos obrigatórios.")
+            else: st.error("Por favor, preencha os campos obrigatórios.")
 
 # --- ADMIN ---
 st.sidebar.markdown("---")
