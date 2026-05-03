@@ -5,3 +5,5 @@ google-auth
 requests
 beautifulsoup4
 Pillow
+selenium
+webdriver-manager
