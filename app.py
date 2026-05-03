@@ -2,18 +2,19 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
+import subprocess
 from PIL import Image
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
-# Importações para o Scraping
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+# Comando para instalar o navegador do Playwright se ele não existir
+try:
+    import playwright
+except ImportError:
+    subprocess.run(["pip", "install", "playwright"])
+    subprocess.run(["playwright", "install", "chromium"])
+
+from playwright.sync_api import sync_playwright
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
@@ -42,50 +43,38 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- FUNÇÃO DE WEB SCRAPING COM TRATAMENTO DE ERRO MELHORADO ---
+# --- FUNÇÃO DE SCRAPING COM PLAYWRIGHT ---
 @st.cache_data(ttl=43200)
 def buscar_cursos_dinamicos():
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--disable-gpu")
-    
-    # Mapa reserva caso a conexão falhe
     mapa_fallback = {
         "Tecnologia da Informação": ["Excel Avançado", "IA Generativa", "Python", "Power BI"],
         "Eletroeletrônica": ["Eletricista Instalador", "Comandos Elétricos"],
-        "Gestão": ["Assistente Administrativo", "Logística"]
+        "Gestão e Logística": ["Almoxarife", "Assistente Administrativo"]
     }
     
     try:
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=chrome_options)
-        driver.get("https://www.sp.senai.br/cursos?unidade=122")
-        
-        # Espera curta para garantir que o conteúdo carregou
-        wait = WebDriverWait(driver, 10)
-        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-        
-        # Tenta localizar os cards ou nomes dos cursos no HTML
-        # Ajustado para pegar o texto de forma mais ampla se as classes mudarem
-        elementos_cursos = driver.find_elements(By.XPATH, "//div[contains(@class, 'card')]")
-        
-        mapa_real = {}
-        for el in elementos_cursos:
-            try:
-                texto = el.text.split('\n')
-                if len(texto) >= 2:
-                    # Tenta identificar Área e Curso pela estrutura comum do SENAI
-                    area = "Cursos SENAI" # Valor padrão se não identificar área
-                    curso = texto[0]
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.goto("https://www.sp.senai.br/cursos?unidade=122", wait_until="networkidle")
+            
+            # Aguarda os elementos de curso aparecerem
+            page.wait_for_selector(".card-curso", timeout=15000)
+            
+            cursos_elements = page.query_selector_all(".card-curso")
+            mapa_real = {}
+            
+            for el in cursos_elements:
+                try:
+                    area = el.query_selector(".area-tematica").inner_text().strip()
+                    curso = el.query_selector(".titulo-curso").inner_text().strip()
                     
                     if area not in mapa_real: mapa_real[area] = []
                     if curso not in mapa_real[area]: mapa_real[area].append(curso)
-            except: continue
-            
-        driver.quit()
-        return mapa_real if mapa_real else mapa_fallback
+                except: continue
+                
+            browser.close()
+            return mapa_real if mapa_real else mapa_fallback
     except:
         return mapa_fallback
 
@@ -143,7 +132,7 @@ if os.path.exists(path_fachada):
     with c_fac2: st.image(Image.open(path_fachada), use_container_width=True)
 
 # --- CARREGAMENTO DOS CURSOS ---
-with st.spinner("Sincronizando cursos..."):
+with st.spinner("Sincronizando cursos em tempo real..."):
     dados_cursos = buscar_cursos_dinamicos()
 
 col_f1, col_f2, col_f3 = st.columns([1, 2, 1])
@@ -163,10 +152,10 @@ with col_f2:
         if area_escolhida != "Selecione..." and curso_escolhido != "Aguardando área..." and nome and email:
             data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             if salvar_novo_lead([nome, email, whats, area_escolhida, curso_escolhido, data_atual]):
-                st.success(f"✅ Olá {nome}! Registro concluído.")
+                st.success(f"✅ Olá {nome}! Registro concluído com sucesso!")
                 st.balloons()
             else: st.error("Erro ao salvar os dados.")
-        else: st.warning("⚠️ Preencha todos os campos.")
+        else: st.warning("⚠️ Preencha todos os campos corretamente.")
 
 # --- ADM ---
 st.sidebar.markdown("## 🔒 Área Administrativa")
