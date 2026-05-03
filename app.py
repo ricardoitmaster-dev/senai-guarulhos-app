@@ -6,7 +6,7 @@ from PIL import Image
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
-# Novas importações para o Scraping
+# Importações para o Scraping
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
@@ -42,48 +42,54 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- FUNÇÃO DE WEB SCRAPING EM TEMPO REAL ---
-@st.cache_data(ttl=43200) # Atualiza a cada 12 horas para manter o app rápido
+# --- FUNÇÃO DE WEB SCRAPING COM TRATAMENTO DE ERRO MELHORADO ---
+@st.cache_data(ttl=43200)
 def buscar_cursos_dinamicos():
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-gpu")
     
-    # Dicionário reserva caso o site esteja fora do ar
-    mapa_fallback = {"Tecnologia da Informação": ["Excel Avançado", "IA Generativa"]}
+    # Mapa reserva caso a conexão falhe
+    mapa_fallback = {
+        "Tecnologia da Informação": ["Excel Avançado", "IA Generativa", "Python", "Power BI"],
+        "Eletroeletrônica": ["Eletricista Instalador", "Comandos Elétricos"],
+        "Gestão": ["Assistente Administrativo", "Logística"]
+    }
     
     try:
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.get("https://www.sp.senai.br/cursos?unidade=122")
         
-        # Espera os cards de cursos carregarem
-        wait = WebDriverWait(driver, 15)
-        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "card-curso")))
+        # Espera curta para garantir que o conteúdo carregou
+        wait = WebDriverWait(driver, 10)
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
-        cards = driver.find_elements(By.CLASS_NAME, "card-curso")
+        # Tenta localizar os cards ou nomes dos cursos no HTML
+        # Ajustado para pegar o texto de forma mais ampla se as classes mudarem
+        elementos_cursos = driver.find_elements(By.XPATH, "//div[contains(@class, 'card')]")
+        
         mapa_real = {}
-        
-        for card in cards:
+        for el in elementos_cursos:
             try:
-                # Extrai área e nome do curso baseado na estrutura do site SENAI
-                area = card.find_element(By.CLASS_NAME, "area-tematica").text.strip()
-                curso = card.find_element(By.CLASS_NAME, "titulo-curso").text.strip()
-                
-                if area not in mapa_real:
-                    mapa_real[area] = []
-                if curso not in mapa_real[area]:
-                    mapa_real[area].append(curso)
-            except:
-                continue
-                
+                texto = el.text.split('\n')
+                if len(texto) >= 2:
+                    # Tenta identificar Área e Curso pela estrutura comum do SENAI
+                    area = "Cursos SENAI" # Valor padrão se não identificar área
+                    curso = texto[0]
+                    
+                    if area not in mapa_real: mapa_real[area] = []
+                    if curso not in mapa_real[area]: mapa_real[area].append(curso)
+            except: continue
+            
         driver.quit()
         return mapa_real if mapa_real else mapa_fallback
-    except Exception as e:
+    except:
         return mapa_fallback
 
-# --- FUNÇÕES DE CONEXÃO (PRESERVADAS) ---
+# --- FUNÇÕES DE CONEXÃO GOOGLE (PRESERVADAS) ---
 @st.cache_resource
 def conectar_google_sheets():
     try:
@@ -123,33 +129,27 @@ def ler_todos_leads():
         return pd.DataFrame(values[1:], columns=values[0]) if values else pd.DataFrame()
     except: return pd.DataFrame()
 
-# --- 1. EXIBIÇÃO DA LOGO (NO TOPO) ---
+# --- INTERFACE VISUAL ---
 path_logo = os.path.join("imagens", "logo.png")
 if os.path.exists(path_logo):
     c_logo1, c_logo2, c_logo3 = st.columns([2, 1, 2])
-    with c_logo2: 
-        st.image(Image.open(path_logo), width=160)
+    with c_logo2: st.image(Image.open(path_logo), width=160)
 
-# --- 2. CABEÇALHO VERMELHO ---
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse</p></div>', unsafe_allow_html=True)
 
-# --- 3. EXIBIÇÃO DA FACHADA DA ESCOLA ---
 path_fachada = os.path.join("imagens", "fachada.jpg")
 if os.path.exists(path_fachada):
     c_fac1, c_fac2, c_fac3 = st.columns([1, 4, 1])
-    with c_fac2:
-        st.image(Image.open(path_fachada), use_container_width=True)
+    with c_fac2: st.image(Image.open(path_fachada), use_container_width=True)
 
-# --- INTERFACE PRINCIPAL (ALIMENTADA PELO SCRAPING) ---
-with st.spinner("Sincronizando cursos com o site do SENAI..."):
+# --- CARREGAMENTO DOS CURSOS ---
+with st.spinner("Sincronizando cursos..."):
     dados_cursos = buscar_cursos_dinamicos()
 
 col_f1, col_f2, col_f3 = st.columns([1, 2, 1])
-
 with col_f2:
     st.markdown("<h3 style='text-align: center;'>📋 Escolha seu Curso</h3>", unsafe_allow_html=True)
     area_escolhida = st.selectbox("1. Selecione a Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
-    
     opcoes_cursos = sorted(dados_cursos[area_escolhida]) if area_escolhida != "Selecione..." else []
     curso_escolhido = st.selectbox("2. Selecione o Curso:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_escolhida == "Selecione..."))
 
@@ -163,17 +163,14 @@ with col_f2:
         if area_escolhida != "Selecione..." and curso_escolhido != "Aguardando área..." and nome and email:
             data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             if salvar_novo_lead([nome, email, whats, area_escolhida, curso_escolhido, data_atual]):
-                st.success(f"✅ Olá {nome}! Registro concluído para {curso_escolhido}. Entraremos em contato!")
+                st.success(f"✅ Olá {nome}! Registro concluído.")
                 st.balloons()
-            else:
-                st.error("Erro ao salvar os dados.")
-        else:
-            st.warning("⚠️ Preencha todos os campos corretamente.")
+            else: st.error("Erro ao salvar os dados.")
+        else: st.warning("⚠️ Preencha todos os campos.")
 
-# --- PAINEL LATERAL ADM ---
+# --- ADM ---
 st.sidebar.markdown("## 🔒 Área Administrativa")
 senha = st.sidebar.text_input("Senha", type="password")
-
 if senha == "Celina2610$$":
     st.sidebar.success("Acesso Liberado")
     if st.sidebar.checkbox("Visualizar Interessados"):
