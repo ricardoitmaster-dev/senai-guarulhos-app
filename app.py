@@ -130,37 +130,68 @@ url_senai = "https://www.sp.senai.br/cursos?unidade=122"
 path_logo = os.path.join("imagens", "logo.png")
 path_fachada = os.path.join("imagens", "fachada.jpg")
 
-# --- SCRAPING DINÂMICO ---
+# --- SCRAPING DINÂMICO APRIMORADO ---
 @st.cache_data(ttl=43200)
 def buscar_cursos_dinamicos():
     api_key = "3e14f4393c5a034104b37c071a0d021f" 
-    url_alvo = url_senai
     mapa_fallback = {
         "Tecnologia da Informação": ["Excel Avançado", "IA Generativa", "Python", "Power BI"],
         "Eletroeletrônica": ["Eletricista Instalador", "Comandos Elétricos"],
         "Gestão e Logística": ["Almoxarife", "Assistente Administrativo"]
     }
+    mapa_real = {}
+    
+    # Filtro de ruído: categorias de sistema que mascaram as áreas reais
+    areas_ignoradas = ["todos", "cursos", "resultados", "busca", "geral", "outros", "veja também"]
+    
     try:
-        params = {'api_key': api_key, 'url': url_alvo, 'render': 'true', 'wait_until': 'networkidle'}
-        response = requests.get('http://api.scraperapi.com', params=params, timeout=90)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'html.parser')
-            cards = soup.select('div[class*="card-curso"]') or soup.select('.item-lista-curso')
-            if not cards: return mapa_fallback
-            mapa_real = {}
-            for card in cards:
-                try:
-                    area_elem = card.select_one('.area-tematica, .txt-area, .tag-area')
-                    titulo_elem = card.select_one('.titulo-curso, h2, .nome-curso')
-                    if area_elem and titulo_elem:
-                        area = area_elem.get_text(strip=True).title()
-                        titulo = titulo_elem.get_text(strip=True).upper()
-                        if area not in mapa_real: mapa_real[area] = []
-                        if titulo not in mapa_real[area]: mapa_real[area].append(titulo)
-                except: continue
-            return mapa_real if len(mapa_real) > 0 else mapa_fallback
+        # Loop de Paginação: Busca até 6 páginas de resultados para garantir cobertura total
+        for pagina in range(1, 7):
+            # Anexa o parâmetro de paginação de forma dinâmica
+            url_alvo = f"{url_senai}&pagina={pagina}"
+            params = {'api_key': api_key, 'url': url_alvo, 'render': 'true', 'wait_until': 'networkidle'}
+            
+            response = requests.get('http://api.scraperapi.com', params=params, timeout=90)
+            
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.text, 'html.parser')
+                
+                # Seletores expandidos para não perder nenhum card
+                cards = soup.select('div[class*="card-curso"], .item-lista-curso, .curso-item, div.curso')
+                
+                if not cards:
+                    break  # Se a página retornou vazia, chegamos ao fim da lista real
+                    
+                cursos_encontrados_nesta_pagina = 0
+                
+                for card in cards:
+                    try:
+                        area_elem = card.select_one('.area-tematica, .txt-area, .tag-area, span[class*="area"]')
+                        titulo_elem = card.select_one('.titulo-curso, h2, h3, .nome-curso')
+                        
+                        if area_elem and titulo_elem:
+                            area = area_elem.get_text(strip=True).title()
+                            titulo = titulo_elem.get_text(strip=True).upper()
+                            
+                            # Condição para focar em áreas categóricas precisas
+                            if area.lower() not in areas_ignoradas and len(area) > 3:
+                                if area not in mapa_real: 
+                                    mapa_real[area] = []
+                                if titulo not in mapa_real[area]: 
+                                    mapa_real[area].append(titulo)
+                                    cursos_encontrados_nesta_pagina += 1
+                    except: 
+                        continue
+                
+                # Prevenção contra loop infinito: se rastreou cards mas nenhum válido, para
+                if cursos_encontrados_nesta_pagina == 0:
+                    break
+            else:
+                break # Interrompe em caso de erro do servidor
+                
+        return mapa_real if len(mapa_real) > 0 else mapa_fallback
+    except: 
         return mapa_fallback
-    except: return mapa_fallback
 
 # --- GOOGLE SHEETS ---
 def conectar_google_sheets():
@@ -234,7 +265,7 @@ if os.path.exists(path_fachada):
             </a>
         ''', unsafe_allow_html=True)
 
-with st.spinner("Sincronizando cursos..."):
+with st.spinner("Sincronizando todas as páginas de cursos..."):
     dados_cursos = buscar_cursos_dinamicos()
 
 # Formulário
@@ -265,7 +296,6 @@ with col_main2:
 st.sidebar.markdown("---")
 st.sidebar.subheader("🔒 Área Administrativa")
 
-# Recupera a senha dos secrets de forma segura
 try:
     senha_mestra = st.secrets["auth"]["admin_password"]
 except:
