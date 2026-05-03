@@ -11,59 +11,62 @@ from googleapiclient.discovery import build
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- CSS: IDENTIDADE VISUAL SENAI (CORES INSTITUCIONAIS) ---
+# --- CSS: ESTILO REFINADO E CORES INSTITUCIONAIS ---
 st.markdown("""
     <style>
-    /* Fundo cinza bem claro, padrão do portal */
-    .stApp { background-color: #f4f4f4; }
+    /* Fundo geral */
+    .stApp { background-color: #f8f9fa; }
     
-    /* Cabeçalho com o Vermelho SENAI exato */
+    /* Cabeçalho Vermelho Suavizado */
     .header-senai { 
-        background-color: #ff0000; 
-        padding: 40px; border-radius: 0px 0px 20px 20px; color: white; text-align: center; 
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 30px;
-        font-family: 'Arial Black', Gadget, sans-serif;
+        background: linear-gradient(180deg, #ff0000 0%, #e30000 100%); 
+        padding: 15px 20px; /* Altura reduzida */
+        border-radius: 15px; /* Cantos arredondados */
+        color: white; 
+        text-align: center; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+        margin: 10px auto 25px auto;
+        max-width: 95%;
+        border-bottom: 3px solid #b30000;
+    }
+    .header-senai h1 { font-size: 22px !important; margin-bottom: 0px; }
+    .header-senai p { font-size: 14px !important; opacity: 0.9; }
+    
+    /* Efeito nas Imagens (Fachada e Logo) */
+    img { 
+        border-radius: 15px; /* Cantos suavizados */
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    img:hover {
+        transform: scale(1.01); /* Leve aumento ao passar o mouse */
+        box-shadow: 0 10px 20px rgba(0,0,0,0.15); /* Brilho/Sombra ao redor */
+        filter: brightness(1.05); /* Deixa mais brilhante */
     }
     
-    /* Formulário com bordas e cores limpas */
+    /* Estilo do Formulário */
     [data-testid="stForm"] {
         background-color: #ffffff !important;
-        border-radius: 8px !important;
-        border: 1px solid #ddd !important;
-        padding: 2.5rem !important;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05) !important;
+        border-radius: 15px !important;
+        border: 1px solid #eaeaea !important;
+        padding: 2rem !important;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.05) !important;
     }
     
-    /* Botão Vermelho SENAI com hover escurecido */
+    /* Botão SENAI */
     div.stButton > button { 
         background-color: #ff0000 !important;
         color: white !important; 
         font-weight: bold !important; 
-        height: 55px !important;
-        border-radius: 4px !important; 
+        height: 50px !important;
+        border-radius: 10px !important; 
         width: 100% !important;
         border: none !important;
-        text-transform: uppercase;
+        transition: 0.3s;
     }
     div.stButton > button:hover {
         background-color: #cc0000 !important;
-        border: none !important;
+        box-shadow: 0 5px 15px rgba(255, 0, 0, 0.3);
     }
-
-    /* Mensagem de sucesso acompanhando o padrão */
-    .sucesso-msg {
-        background-color: #ffffff;
-        color: #333;
-        padding: 25px;
-        border-radius: 8px;
-        border-left: 10px solid #ff0000;
-        text-align: center;
-        margin-top: 20px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-    
-    /* Ajuste de labels */
-    label { color: #333 !important; font-weight: 600 !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -106,7 +109,7 @@ def buscar_cursos_dinamicos():
     except:
         return mapa_fallback
 
-# --- INTEGRAÇÃO GOOGLE SHEETS ---
+# --- FUNÇÕES GOOGLE SHEETS ---
 def conectar_google_sheets():
     try:
         s = st.secrets["connections"]["gsheets"]
@@ -147,18 +150,23 @@ def ler_todos_leads():
     except: return pd.DataFrame()
 
 # --- INTERFACE ---
-# Logo no topo
+# Logo
 path_logo = os.path.join("imagens", "logo.png")
 try:
     if os.path.exists(path_logo):
         c_logo1, c_logo2, c_logo3 = st.columns([2, 1, 2])
-        with c_logo2: st.image(Image.open(path_logo), width=180)
+        with c_logo2: st.image(Image.open(path_logo), width=150)
 except: pass
 
-# Cabeçalho Vermelho
-st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse</p></div>', unsafe_allow_html=True)
+# Cabeçalho Modernizado
+st.markdown("""
+    <div class="header-senai">
+        <h1>SENAI GUARULHOS</h1>
+        <p>Unidade 122 - Registro de Interesse</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-# Fachada tratada para evitar erro de imagem quebrada
+# Imagem da Fachada com cantos arredondados (via CSS)
 path_fachada = os.path.join("imagens", "fachada.jpg")
 try:
     if os.path.exists(path_fachada):
@@ -166,43 +174,37 @@ try:
         with c_fac2: st.image(Image.open(path_fachada), use_container_width=True)
 except: pass
 
-with st.spinner("Carregando cursos..."):
+with st.spinner("Sincronizando cursos disponíveis..."):
     dados_cursos = buscar_cursos_dinamicos()
 
-# Layout do Formulário
+# Área do Formulário
 col_f1, col_f2, col_f3 = st.columns([1, 2, 1])
 with col_f2:
-    st.markdown("<h3 style='text-align: center; color: #333;'>📋 Formulário de Inscrição</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; color: #333; margin-top: 20px;'>📋 Cadastro de Interesse</h3>", unsafe_allow_html=True)
     
     area_escolhida = st.selectbox("Selecione a Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
     opcoes_cursos = sorted(dados_cursos[area_escolhida]) if area_escolhida != "Selecione..." else []
-    curso_escolhido = st.selectbox("Selecione o Curso de Interesse:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_escolhida == "Selecione..."))
+    curso_escolhido = st.selectbox("Selecione o Curso:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_escolhida == "Selecione..."))
 
     with st.form("form_interessado", clear_on_submit=True):
         nome = st.text_input("Nome Completo")
         email = st.text_input("E-mail")
         whats = st.text_input("WhatsApp (com DDD)")
-        sugestao = st.text_area("Sugestão de outro curso ou comentário:")
-        btn_enviar = st.form_submit_button("ENVIAR INTERESSE")
+        sugestao = st.text_area("Observações ou curso não listado:")
+        btn_enviar = st.form_submit_button("REGISTRAR AGORA")
 
     if btn_enviar:
         if area_escolhida != "Selecione..." and nome and email:
             data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             if salvar_novo_lead([nome, email, whats, area_escolhida, curso_escolhido, sugestao, data_atual]):
-                st.markdown(f"""
-                    <div class="sucesso-msg">
-                        <h3>Olá, {nome}!</h3>
-                        <p>Seu interesse no curso <b>{curso_escolhido}</b> foi registrado.</p>
-                        <p>Entraremos em contato assim que as vagas forem abertas.</p>
-                    </div>
-                """, unsafe_allow_html=True)
+                st.success(f"Excelente, {nome}! Seu interesse foi registrado. Entraremos em contato em breve.")
                 st.balloons()
-        else: st.warning("Por favor, preencha todos os campos obrigatórios.")
+        else: st.error("Por favor, preencha os campos obrigatórios.")
 
 # --- ADMIN ---
-st.sidebar.markdown("## 🔒 Painel Administrativo")
-senha = st.sidebar.text_input("Senha de Acesso", type="password")
+st.sidebar.markdown("---")
+senha = st.sidebar.text_input("Acesso Administrativo", type="password")
 if senha == "Celina2610$$":
-    if st.sidebar.checkbox("Visualizar Interessados"):
+    if st.sidebar.checkbox("Ver Leads"):
         df = ler_todos_leads()
         if not df.empty: st.dataframe(df)
