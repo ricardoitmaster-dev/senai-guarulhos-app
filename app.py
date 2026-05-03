@@ -11,40 +11,63 @@ from googleapiclient.discovery import build
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- CSS: ESTILO PROFISSIONAL ---
+# --- CSS: IDENTIDADE VISUAL SENAI (CORES INSTITUCIONAIS) ---
 st.markdown("""
     <style>
-    .stApp { background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%); }
+    /* Fundo cinza bem claro, padrão do portal */
+    .stApp { background-color: #f4f4f4; }
+    
+    /* Cabeçalho com o Vermelho SENAI exato */
     .header-senai { 
-        background: linear-gradient(90deg, #e3000f 0%, #ff4b4b 100%); 
-        padding: 30px; border-radius: 20px; color: white; text-align: center; 
-        box-shadow: 0 15px 25px -5px rgba(227, 0, 15, 0.4); margin-bottom: 20px;
+        background-color: #ff0000; 
+        padding: 40px; border-radius: 0px 0px 20px 20px; color: white; text-align: center; 
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 30px;
+        font-family: 'Arial Black', Gadget, sans-serif;
     }
+    
+    /* Formulário com bordas e cores limpas */
     [data-testid="stForm"] {
-        background: rgba(255, 255, 255, 0.4) !important;
-        backdrop-filter: blur(15px) saturate(180%) !important;
-        border-radius: 25px !important;
-        border: 1px solid rgba(255, 255, 255, 0.5) !important;
-        padding: 3rem !important;
+        background-color: #ffffff !important;
+        border-radius: 8px !important;
+        border: 1px solid #ddd !important;
+        padding: 2.5rem !important;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05) !important;
     }
+    
+    /* Botão Vermelho SENAI com hover escurecido */
     div.stButton > button { 
-        background: linear-gradient(90deg, #232526 0%, #414345 100%) !important;
-        color: white !important; font-weight: 700 !important; height: 60px !important;
-        border-radius: 15px !important; width: 100% !important;
+        background-color: #ff0000 !important;
+        color: white !important; 
+        font-weight: bold !important; 
+        height: 55px !important;
+        border-radius: 4px !important; 
+        width: 100% !important;
+        border: none !important;
+        text-transform: uppercase;
     }
+    div.stButton > button:hover {
+        background-color: #cc0000 !important;
+        border: none !important;
+    }
+
+    /* Mensagem de sucesso acompanhando o padrão */
     .sucesso-msg {
-        background-color: #d4edda;
-        color: #155724;
-        padding: 20px;
-        border-radius: 10px;
-        border: 1px solid #c3e6cb;
+        background-color: #ffffff;
+        color: #333;
+        padding: 25px;
+        border-radius: 8px;
+        border-left: 10px solid #ff0000;
         text-align: center;
         margin-top: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
+    
+    /* Ajuste de labels */
+    label { color: #333 !important; font-weight: 600 !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- SCRAPING DINÂMICO APERFEIÇOADO ---
+# --- SCRAPING DINÂMICO ---
 @st.cache_data(ttl=43200)
 def buscar_cursos_dinamicos():
     api_key = "3e14f4393c5a034104b37c071a0d021f" 
@@ -57,39 +80,27 @@ def buscar_cursos_dinamicos():
     }
 
     try:
-        # Aumentamos o tempo de espera e garantimos a renderização completa
-        params = {
-            'api_key': api_key, 
-            'url': url_alvo, 
-            'render': 'true',
-            'wait_until': 'networkidle'
-        }
+        params = {'api_key': api_key, 'url': url_alvo, 'render': 'true', 'wait_until': 'networkidle'}
         response = requests.get('http://api.scraperapi.com', params=params, timeout=90)
         
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
-            # Seletores mais genéricos para capturar todos os tipos de cursos (Livres, Técnicos, etc)
             cards = soup.select('div[class*="card-curso"]') or soup.select('.item-lista-curso')
             
-            if not cards:
-                return mapa_fallback
+            if not cards: return mapa_fallback
             
             mapa_real = {}
             for card in cards:
                 try:
-                    # Tenta capturar a área e o título por múltiplas classes possíveis
                     area_elem = card.select_one('.area-tematica, .txt-area, .tag-area')
                     titulo_elem = card.select_one('.titulo-curso, h2, .nome-curso')
                     
                     if area_elem and titulo_elem:
                         area = area_elem.get_text(strip=True).title()
                         titulo = titulo_elem.get_text(strip=True).upper()
-                        
                         if area not in mapa_real: mapa_real[area] = []
                         if titulo not in mapa_real[area]: mapa_real[area].append(titulo)
-                except:
-                    continue
-            
+                except: continue
             return mapa_real if len(mapa_real) > 0 else mapa_fallback
         return mapa_fallback
     except:
@@ -136,33 +147,34 @@ def ler_todos_leads():
     except: return pd.DataFrame()
 
 # --- INTERFACE ---
+# Logo no topo
 path_logo = os.path.join("imagens", "logo.png")
 try:
     if os.path.exists(path_logo):
         c_logo1, c_logo2, c_logo3 = st.columns([2, 1, 2])
-        with c_logo2: st.image(Image.open(path_logo), width=160)
+        with c_logo2: st.image(Image.open(path_logo), width=180)
 except: pass
 
+# Cabeçalho Vermelho
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse</p></div>', unsafe_allow_html=True)
 
+# Fachada tratada para evitar erro de imagem quebrada
 path_fachada = os.path.join("imagens", "fachada.jpg")
 try:
     if os.path.exists(path_fachada):
         c_fac1, c_fac2, c_fac3 = st.columns([1, 6, 1])
-        with c_fac2: st.image(Image.open(path_fachada), use_container_width=True, caption="SENAI Hermenegildo Parente - Guarulhos")
+        with c_fac2: st.image(Image.open(path_fachada), use_container_width=True)
 except: pass
 
-with st.spinner("Buscando lista completa de cursos atualizada..."):
+with st.spinner("Carregando cursos..."):
     dados_cursos = buscar_cursos_dinamicos()
 
+# Layout do Formulário
 col_f1, col_f2, col_f3 = st.columns([1, 2, 1])
 with col_f2:
-    st.markdown("<h3 style='text-align: center;'>📋 Formulário de Inscrição</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; color: #333;'>📋 Formulário de Inscrição</h3>", unsafe_allow_html=True)
     
-    # Ordenação alfabética das áreas para facilitar a busca do aluno
-    areas_disponiveis = sorted(list(dados_cursos.keys()))
-    area_escolhida = st.selectbox("Selecione a Área Profissional:", ["Selecione..."] + areas_disponiveis)
-    
+    area_escolhida = st.selectbox("Selecione a Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
     opcoes_cursos = sorted(dados_cursos[area_escolhida]) if area_escolhida != "Selecione..." else []
     curso_escolhido = st.selectbox("Selecione o Curso de Interesse:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_escolhida == "Selecione..."))
 
@@ -170,8 +182,8 @@ with col_f2:
         nome = st.text_input("Nome Completo")
         email = st.text_input("E-mail")
         whats = st.text_input("WhatsApp (com DDD)")
-        sugestao = st.text_area("Não encontrou seu curso? Sugira aqui:")
-        btn_enviar = st.form_submit_button("REGISTRAR INTERESSE")
+        sugestao = st.text_area("Sugestão de outro curso ou comentário:")
+        btn_enviar = st.form_submit_button("ENVIAR INTERESSE")
 
     if btn_enviar:
         if area_escolhida != "Selecione..." and nome and email:
@@ -179,18 +191,18 @@ with col_f2:
             if salvar_novo_lead([nome, email, whats, area_escolhida, curso_escolhido, sugestao, data_atual]):
                 st.markdown(f"""
                     <div class="sucesso-msg">
-                        <h3>Tudo pronto, {nome}!</h3>
-                        <p>Seu interesse no curso <b>{curso_escolhido}</b> foi registrado com sucesso.</p>
-                        <p>Assim que este curso for aberto na Unidade 122, entraremos em contato!</p>
+                        <h3>Olá, {nome}!</h3>
+                        <p>Seu interesse no curso <b>{curso_escolhido}</b> foi registrado.</p>
+                        <p>Entraremos em contato assim que as vagas forem abertas.</p>
                     </div>
                 """, unsafe_allow_html=True)
                 st.balloons()
-        else: st.warning("Por favor, preencha os campos obrigatórios (Área, Nome e E-mail).")
+        else: st.warning("Por favor, preencha todos os campos obrigatórios.")
 
 # --- ADMIN ---
-st.sidebar.markdown("## 🔒 Admin")
-senha = st.sidebar.text_input("Senha", type="password")
+st.sidebar.markdown("## 🔒 Painel Administrativo")
+senha = st.sidebar.text_input("Senha de Acesso", type="password")
 if senha == "Celina2610$$":
-    if st.sidebar.checkbox("Visualizar Leads"):
+    if st.sidebar.checkbox("Visualizar Interessados"):
         df = ler_todos_leads()
         if not df.empty: st.dataframe(df)
