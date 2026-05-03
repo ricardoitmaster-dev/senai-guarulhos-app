@@ -2,11 +2,18 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
-import requests
-from bs4 import BeautifulSoup
 from PIL import Image
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+
+# Novas importações para o Scraping
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
@@ -35,16 +42,48 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- FUNÇÕES DE DADOS ---
-@st.cache_data(ttl=86400)
+# --- FUNÇÃO DE WEB SCRAPING EM TEMPO REAL ---
+@st.cache_data(ttl=43200) # Atualiza a cada 12 horas para manter o app rápido
 def buscar_cursos_dinamicos():
-    return {
-        "Tecnologia da Informação": ["Excel Avançado", "IA Generativa", "Python", "Power BI", "Desenvolvimento de Sistemas"],
-        "Eletroeletrônica": ["Eletricista Instalador", "Comandos Elétricos", "CLP", "Manutenção Eletrônica"],
-        "Metalmecânica": ["Mecânico de Usinagem", "Soldagem MAG/TIG", "Operador de CNC", "Mecânico de Manutenção"],
-        "Gestão e Logística": ["Almoxarife", "Assistente Administrativo", "Assistente de RH", "Logística"]
-    }
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    
+    # Dicionário reserva caso o site esteja fora do ar
+    mapa_fallback = {"Tecnologia da Informação": ["Excel Avançado", "IA Generativa"]}
+    
+    try:
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        driver.get("https://www.sp.senai.br/cursos?unidade=122")
+        
+        # Espera os cards de cursos carregarem
+        wait = WebDriverWait(driver, 15)
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "card-curso")))
+        
+        cards = driver.find_elements(By.CLASS_NAME, "card-curso")
+        mapa_real = {}
+        
+        for card in cards:
+            try:
+                # Extrai área e nome do curso baseado na estrutura do site SENAI
+                area = card.find_element(By.CLASS_NAME, "area-tematica").text.strip()
+                curso = card.find_element(By.CLASS_NAME, "titulo-curso").text.strip()
+                
+                if area not in mapa_real:
+                    mapa_real[area] = []
+                if curso not in mapa_real[area]:
+                    mapa_real[area].append(curso)
+            except:
+                continue
+                
+        driver.quit()
+        return mapa_real if mapa_real else mapa_fallback
+    except Exception as e:
+        return mapa_fallback
 
+# --- FUNÇÕES DE CONEXÃO (PRESERVADAS) ---
 @st.cache_resource
 def conectar_google_sheets():
     try:
@@ -94,21 +133,23 @@ if os.path.exists(path_logo):
 # --- 2. CABEÇALHO VERMELHO ---
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse</p></div>', unsafe_allow_html=True)
 
-# --- 3. EXIBIÇÃO DA FACHADA DA ESCOLA (ABAIXO DO CABEÇALHO) ---
+# --- 3. EXIBIÇÃO DA FACHADA DA ESCOLA ---
 path_fachada = os.path.join("imagens", "fachada.jpg")
 if os.path.exists(path_fachada):
     c_fac1, c_fac2, c_fac3 = st.columns([1, 4, 1])
     with c_fac2:
         st.image(Image.open(path_fachada), use_container_width=True)
 
-# --- INTERFACE PRINCIPAL ---
-dados_cursos = buscar_cursos_dinamicos()
+# --- INTERFACE PRINCIPAL (ALIMENTADA PELO SCRAPING) ---
+with st.spinner("Sincronizando cursos com o site do SENAI..."):
+    dados_cursos = buscar_cursos_dinamicos()
 
 col_f1, col_f2, col_f3 = st.columns([1, 2, 1])
 
 with col_f2:
     st.markdown("<h3 style='text-align: center;'>📋 Escolha seu Curso</h3>", unsafe_allow_html=True)
     area_escolhida = st.selectbox("1. Selecione a Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
+    
     opcoes_cursos = sorted(dados_cursos[area_escolhida]) if area_escolhida != "Selecione..." else []
     curso_escolhido = st.selectbox("2. Selecione o Curso:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_escolhida == "Selecione..."))
 
@@ -122,10 +163,10 @@ with col_f2:
         if area_escolhida != "Selecione..." and curso_escolhido != "Aguardando área..." and nome and email:
             data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             if salvar_novo_lead([nome, email, whats, area_escolhida, curso_escolhido, data_atual]):
-                st.success(f"✅ Olá {nome}! Registro concluído para o curso de {curso_escolhido}. Retornaremos assim que as turmas forem abertas!")
+                st.success(f"✅ Olá {nome}! Registro concluído para {curso_escolhido}. Entraremos em contato!")
                 st.balloons()
             else:
-                st.error("Erro ao salvar os dados no Google Sheets.")
+                st.error("Erro ao salvar os dados.")
         else:
             st.warning("⚠️ Preencha todos os campos corretamente.")
 
