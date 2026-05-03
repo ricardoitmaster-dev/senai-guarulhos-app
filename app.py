@@ -32,6 +32,15 @@ st.markdown("""
         color: white !important; font-weight: 700 !important; height: 60px !important;
         border-radius: 15px !important; width: 100% !important;
     }
+    .sucesso-msg {
+        background-color: #d4edda;
+        color: #155724;
+        padding: 20px;
+        border-radius: 10px;
+        border: 1px solid #c3e6cb;
+        text-align: center;
+        margin-top: 20px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -69,7 +78,7 @@ def buscar_cursos_dinamicos():
     except:
         return mapa_fallback
 
-# --- INTEGRAÇÃO GOOGLE SHEETS (SEM CACHE PARA EVITAR BROKEN PIPE) ---
+# --- INTEGRAÇÃO GOOGLE SHEETS ---
 def conectar_google_sheets():
     try:
         s = st.secrets["connections"]["gsheets"]
@@ -83,17 +92,13 @@ def conectar_google_sheets():
             "client_x509_cert_url": s["client_x509_cert_url"]
         }
         creds = service_account.Credentials.from_service_account_info(info, scopes=["https://www.googleapis.com/auth/spreadsheets"])
-        # Retorna uma nova conexão a cada chamada
         return build("sheets", "v4", credentials=creds, cache_discovery=False)
-    except Exception as e:
-        st.error(f"Erro de Conexão Google: {e}")
-        return None
+    except: return None
 
 def salvar_novo_lead(lista_dados):
     try:
         service = conectar_google_sheets()
         if service is None: return False
-        
         url = st.secrets["connections"]["gsheets"]["spreadsheet"]
         sheet_id = url.split("/d/")[1].split("/")[0]
         
@@ -105,15 +110,11 @@ def salvar_novo_lead(lista_dados):
             body={"values": [lista_dados]}
         ).execute()
         return True
-    except Exception as e:
-        st.error(f"Erro ao salvar (Broken Pipe ou Timeout): {e}")
-        return False
+    except: return False
 
 def ler_todos_leads():
     try:
         service = conectar_google_sheets()
-        if service is None: return pd.DataFrame()
-        
         url = st.secrets["connections"]["gsheets"]["spreadsheet"]
         sheet_id = url.split("/d/")[1].split("/")[0]
         result = service.spreadsheets().values().get(spreadsheetId=sheet_id, range="A1:Z2000").execute()
@@ -135,6 +136,7 @@ with st.spinner("Sincronizando cursos..."):
 col_f1, col_f2, col_f3 = st.columns([1, 2, 1])
 with col_f2:
     st.markdown("<h3 style='text-align: center;'>📋 Formulário de Inscrição</h3>", unsafe_allow_html=True)
+    
     area_escolhida = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
     opcoes_cursos = sorted(dados_cursos[area_escolhida]) if area_escolhida != "Selecione..." else []
     curso_escolhido = st.selectbox("Curso de Interesse:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_escolhida == "Selecione..."))
@@ -143,17 +145,25 @@ with col_f2:
         nome = st.text_input("Nome Completo")
         email = st.text_input("E-mail")
         whats = st.text_input("WhatsApp")
+        sugestao = st.text_area("Sugestão de outro curso ou comentário:") # CAMPO REINSERIDO
         btn_enviar = st.form_submit_button("REGISTRAR INTERESSE")
 
     if btn_enviar:
         if area_escolhida != "Selecione..." and nome and email:
             data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            if salvar_novo_lead([nome, email, whats, area_escolhida, curso_escolhido, data_atual]):
-                st.success(f"Sucesso! {nome}, recebemos seu interesse.")
+            # Agora salvamos também a sugestão na planilha
+            if salvar_novo_lead([nome, email, whats, area_escolhida, curso_escolhido, sugestao, data_atual]):
+                st.markdown(f"""
+                    <div class="sucesso-msg">
+                        <h3>Obrigado, {nome}!</h3>
+                        <p>Seu interesse no curso <b>{curso_escolhido}</b> foi registrado com sucesso.</p>
+                        <p>Assim que este curso for aberto, entraremos em contato imediatamente!</p>
+                    </div>
+                """, unsafe_allow_html=True)
                 st.balloons()
-        else: st.warning("Preencha todos os campos obrigatórios.")
+        else: st.warning("Por favor, preencha o nome, e-mail e selecione a área de interesse.")
 
-# --- ADM ---
+# --- ADMINISTRAÇÃO ---
 st.sidebar.markdown("## 🔒 Admin")
 senha = st.sidebar.text_input("Senha", type="password")
 if senha == "Celina2610$$":
