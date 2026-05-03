@@ -261,10 +261,25 @@ with col_main2:
                     st.balloons()
             else: st.error("Por favor, preencha os campos obrigatórios.")
 
-# --- ADMIN ---
+# --- ADMIN (SEGURANÇA REFORÇADA COM SECRETS) ---
 st.sidebar.markdown("---")
-senha = st.sidebar.text_input("Senha", type="password")
-if senha == "Celina2610$$":
-    if st.sidebar.checkbox("Ver Dados"):
-        df = ler_todos_leads()
-        if not df.empty: st.dataframe(df)
+st.sidebar.subheader("🔒 Área Administrativa")
+
+# Recupera a senha dos secrets de forma segura
+try:
+    senha_mestra = st.secrets["auth"]["admin_password"]
+except:
+    senha_mestra = None
+
+senha_digitada = st.sidebar.text_input("Senha", type="password")
+
+if senha_digitada:
+    if senha_mestra and senha_digitada == senha_mestra:
+        st.sidebar.success("Acesso Liberado")
+        if st.sidebar.checkbox("Ver Dados"):
+            df = ler_todos_leads()
+            if not df.empty: 
+                st.markdown("### 📊 Leads Cadastrados")
+                st.dataframe(df)
+    else:
+        st.sidebar.error("Senha incorreta")
