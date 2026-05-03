@@ -4,7 +4,6 @@ from datetime import datetime
 import os
 import requests
 from bs4 import BeautifulSoup
-from PIL import Image
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import base64
@@ -12,186 +11,80 @@ import base64
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# Função para converter imagem local em base64
 def get_base64_of_bin_file(bin_file):
     with open(bin_file, 'rb') as f:
         data = f.read()
     return base64.b64encode(data).decode()
 
-# --- CSS: ESTILO 3D, FAIXA TOTAL E CORREÇÃO DE CORES MOBILE ---
+# --- CSS: ESTILO 3D ---
 st.markdown("""
     <style>
-    /* Fundo Neumórfico */
     .stApp { background-color: #e0e5ec; }
-    
-    /* Container do Logo acima da faixa */
-    .logo-container {
-        position: relative;
-        z-index: 10;
-        margin-bottom: -20px;
-        display: flex;
-        justify-content: center;
-        padding-top: 10px;
-    }
-
-    /* FAIXA VERMELHA LARGURA TOTAL */
+    .logo-container { position: relative; z-index: 10; margin-bottom: -20px; display: flex; justify-content: center; padding-top: 10px; }
     .header-senai { 
-        background: #ff0000; 
-        padding: 40px 0px 25px 0px; 
-        color: white; 
-        text-align: center; 
-        width: 100vw;
-        position: relative;
-        left: 50%;
-        right: 50%;
-        margin-left: -50vw;
-        margin-right: -50vw;
-        z-index: 5;
-        box-shadow: 0px 10px 15px rgba(0,0,0,0.1);
-        border-bottom: 4px solid #cc0000;
+        background: #ff0000; padding: 40px 0px 25px 0px; color: white; text-align: center; width: 100vw;
+        position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; z-index: 5;
+        box-shadow: 0px 10px 15px rgba(0,0,0,0.1); border-bottom: 4px solid #cc0000;
     }
-    
-    .header-senai h1 { 
-        font-size: 28px !important; 
-        margin: 0; 
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        font-weight: 800;
-        color: white !important;
-    }
-    .header-senai p { font-size: 16px !important; margin: 5px 0 0 0; opacity: 0.9; color: white !important; }
-
-    /* CORREÇÃO PARA SMARTPHONES: Labels em PRETO */
-    label, [data-testid="stWidgetLabel"] p {
-        color: #000000 !important;
-        font-weight: 600 !important;
-    }
-
-    /* CORREÇÃO CRÍTICA DO BOTÃO PARA CELULAR */
+    .header-senai h1 { font-size: 28px !important; margin: 0; color: white !important; font-weight: 800; }
+    label, [data-testid="stWidgetLabel"] p { color: #000000 !important; font-weight: 600 !important; }
     div.stButton > button { 
-        background-color: #ff0000 !important;
-        color: #ffffff !important; 
-        font-weight: bold !important; 
-        height: 55px !important;
-        border-radius: 15px !important; 
-        width: 100% !important;
-        border: none !important;
+        background-color: #ff0000 !important; color: #ffffff !important; font-weight: bold !important; 
+        height: 55px !important; border-radius: 15px !important; width: 100% !important;
         box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff !important;
-        -webkit-tap-highlight-color: transparent;
     }
-    
-    div.stButton > button p {
-        color: #ffffff !important;
-    }
-
-    div.stButton > button:hover, div.stButton > button:active, div.stButton > button:focus {
-        background-color: #cc0000 !important;
-        color: #ffffff !important;
-    }
-
-    /* Efeito de Botão 3D nas Imagens */
-    .img-3d-link {
-        display: block;
-        margin: auto;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        border-radius: 25px;
-        overflow: hidden;
-        width: fit-content;
-    }
-    .img-3d-link img {
-        border-radius: 25px;
-        box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff;
-        transition: all 0.3s ease;
-        border: 4px solid #e0e5ec;
-    }
-    .img-3d-link:hover { transform: scale(0.98); }
-
-    /* Formulário Escavado */
     [data-testid="stForm"] {
-        background-color: #e0e5ec !important;
-        border-radius: 30px !important;
-        padding: 2rem !important;
-        box-shadow: inset 8px 8px 16px #bebebe, inset -8px -8px 16px #ffffff !important;
-        border: none !important;
-    }
-
-    /* Inputs Neumórficos */
-    .stTextInput div[data-baseweb="input"], .stSelectbox div[data-baseweb="select"], .stTextArea div[data-baseweb="textarea"] {
-        background-color: #e0e5ec !important;
-        border-radius: 15px !important;
-        box-shadow: inset 3px 3px 6px #bebebe, inset -3px -3px 6px #ffffff !important;
-        border: none !important;
+        background-color: #e0e5ec !important; border-radius: 30px !important; padding: 2rem !important;
+        box-shadow: inset 8px 8px 16px #bebebe, inset -8px -8px 16px #ffffff !important; border: none !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
 # --- CONFIGURAÇÕES ---
-url_senai = "https://www.sp.senai.br/cursos?unidade=122"
+# Lista de URLs das principais áreas para garantir que o robô não ignore nenhuma
+AREAS_PARA_VARREDURA = [
+    "https://www.sp.senai.br/cursos/0/administracao-e-gestao?unidade=122",
+    "https://www.sp.senai.br/cursos/0/tecnologia-da-informacao?unidade=122",
+    "https://www.sp.senai.br/cursos/0/eletroeletronica?unidade=122",
+    "https://www.sp.senai.br/cursos/0/metalmecanica?unidade=122",
+    "https://www.sp.senai.br/cursos/0/logistica-e-transporte?unidade=122",
+    "https://www.sp.senai.br/cursos/0/automotiva?unidade=122"
+]
 path_logo = os.path.join("imagens", "logo.png")
 path_fachada = os.path.join("imagens", "fachada.jpg")
 
-# --- SCRAPING DINÂMICO APRIMORADO ---
+# --- SCRAPING DINÂMICO MULTI-ÁREA ---
 @st.cache_data(ttl=43200)
-def buscar_cursos_dinamicos():
-    api_key = "3e14f4393c5a034104b37c071a0d021f" 
-    mapa_fallback = {
-        "Tecnologia da Informação": ["Excel Avançado", "IA Generativa", "Python", "Power BI"],
-        "Eletroeletrônica": ["Eletricista Instalador", "Comandos Elétricos"],
-        "Gestão e Logística": ["Almoxarife", "Assistente Administrativo"]
-    }
+def buscar_cursos_total():
+    api_key = "3e14f4393c5a034104b37c071a0d021f"
     mapa_real = {}
     
-    # Filtro de ruído: categorias de sistema que mascaram as áreas reais
-    areas_ignoradas = ["todos", "cursos", "resultados", "busca", "geral", "outros", "veja também"]
-    
-    try:
-        # Loop de Paginação: Busca até 6 páginas de resultados para garantir cobertura total
-        for pagina in range(1, 7):
-            # Anexa o parâmetro de paginação de forma dinâmica
-            url_alvo = f"{url_senai}&pagina={pagina}"
-            params = {'api_key': api_key, 'url': url_alvo, 'render': 'true', 'wait_until': 'networkidle'}
-            
-            response = requests.get('http://api.scraperapi.com', params=params, timeout=90)
+    for url in AREAS_PARA_VARREDURA:
+        try:
+            params = {'api_key': api_key, 'url': url, 'render': 'true', 'wait_until': 'networkidle'}
+            response = requests.get('http://api.scraperapi.com', params=params, timeout=120)
             
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, 'html.parser')
-                
-                # Seletores expandidos para não perder nenhum card
-                cards = soup.select('div[class*="card-curso"], .item-lista-curso, .curso-item, div.curso')
-                
-                if not cards:
-                    break  # Se a página retornou vazia, chegamos ao fim da lista real
-                    
-                cursos_encontrados_nesta_pagina = 0
+                cards = soup.select('div[class*="card-curso"], .item-lista-curso')
                 
                 for card in cards:
-                    try:
-                        area_elem = card.select_one('.area-tematica, .txt-area, .tag-area, span[class*="area"]')
-                        titulo_elem = card.select_one('.titulo-curso, h2, h3, .nome-curso')
+                    area_elem = card.select_one('.area-tematica, .txt-area, .tag-area')
+                    titulo_elem = card.select_one('.titulo-curso, h2, .nome-curso')
+                    
+                    if area_elem and titulo_elem:
+                        area = area_elem.get_text(strip=True).title()
+                        titulo = titulo_elem.get_text(strip=True).upper()
                         
-                        if area_elem and titulo_elem:
-                            area = area_elem.get_text(strip=True).title()
-                            titulo = titulo_elem.get_text(strip=True).upper()
-                            
-                            # Condição para focar em áreas categóricas precisas
-                            if area.lower() not in areas_ignoradas and len(area) > 3:
-                                if area not in mapa_real: 
-                                    mapa_real[area] = []
-                                if titulo not in mapa_real[area]: 
-                                    mapa_real[area].append(titulo)
-                                    cursos_encontrados_nesta_pagina += 1
-                    except: 
-                        continue
-                
-                # Prevenção contra loop infinito: se rastreou cards mas nenhum válido, para
-                if cursos_encontrados_nesta_pagina == 0:
-                    break
-            else:
-                break # Interrompe em caso de erro do servidor
-                
-        return mapa_real if len(mapa_real) > 0 else mapa_fallback
-    except: 
-        return mapa_fallback
+                        if area not in mapa_real: mapa_real[area] = []
+                        if titulo not in mapa_real[area]: mapa_real[area].append(titulo)
+        except:
+            continue
+            
+    # Fallback caso a raspagem falhe totalmente
+    if not mapa_real:
+        return {"TI e Gestão": ["EXCEL AVANÇADO", "IA GENERATIVA", "ASSISTENTE ADMINISTRATIVO"]}
+    return mapa_real
 
 # --- GOOGLE SHEETS ---
 def conectar_google_sheets():
@@ -213,7 +106,6 @@ def conectar_google_sheets():
 def salvar_novo_lead(lista_dados):
     try:
         service = conectar_google_sheets()
-        if service is None: return False
         url = st.secrets["connections"]["gsheets"]["spreadsheet"]
         sheet_id = url.split("/d/")[1].split("/")[0]
         service.spreadsheets().values().append(
@@ -223,93 +115,40 @@ def salvar_novo_lead(lista_dados):
         return True
     except: return False
 
-def ler_todos_leads():
-    try:
-        service = conectar_google_sheets()
-        url = st.secrets["connections"]["gsheets"]["spreadsheet"]
-        sheet_id = url.split("/d/")[1].split("/")[0]
-        result = service.spreadsheets().values().get(spreadsheetId=sheet_id, range="A1:Z2000").execute()
-        values = result.get("values", [])
-        return pd.DataFrame(values[1:], columns=values[0]) if values else pd.DataFrame()
-    except: return pd.DataFrame()
-
 # --- INTERFACE ---
-
-# 1. Logo
 if os.path.exists(path_logo):
-    logo_base64 = get_base64_of_bin_file(path_logo)
-    st.markdown(f'''
-        <div class="logo-container">
-            <a href="{url_senai}" target="_blank" class="img-3d-link">
-                <img src="data:image/png;base64,{logo_base64}" width="150">
-            </a>
-        </div>
-    ''', unsafe_allow_html=True)
+    logo_64 = get_base64_of_bin_file(path_logo)
+    st.markdown(f'<div class="logo-container"><img src="data:image/png;base64,{logo_64}" width="150"></div>', unsafe_allow_html=True)
 
-# Faixa Vermelha
-st.markdown(f'''
-    <div class="header-senai">
-        <h1>SENAI GUARULHOS</h1>
-        <p>Unidade 122 - Registro de Interesse Profissional</p>
-    </div>
-''', unsafe_allow_html=True)
+st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse</p></div>', unsafe_allow_html=True)
 
-# 2. Fachada
-if os.path.exists(path_fachada):
-    fachada_base64 = get_base64_of_bin_file(path_fachada)
-    c_f1, c_f2, c_f3 = st.columns([1, 6, 1])
-    with c_f2:
-        st.markdown(f'''
-            <a href="{url_senai}" target="_blank" class="img-3d-link">
-                <img src="data:image/jpeg;base64,{fachada_base64}" style="width: 100%;">
-            </a>
-        ''', unsafe_allow_html=True)
+with st.spinner("Sincronizando catálogo completo de cursos..."):
+    dados_cursos = buscar_cursos_total()
 
-with st.spinner("Sincronizando todas as páginas de cursos..."):
-    dados_cursos = buscar_cursos_dinamicos()
-
-# Formulário
 col_main1, col_main2, col_main3 = st.columns([1, 2, 1])
 with col_main2:
-    st.markdown("<h3 style='text-align: center; margin-top: 20px; color: #000000;'>📋 Cadastro de Interesse</h3>", unsafe_allow_html=True)
-    
-    area_sel = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
+    st.markdown("<br>", unsafe_allow_html=True)
+    area_sel = st.selectbox("Escolha a Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
     opcoes = sorted(dados_cursos[area_sel]) if area_sel != "Selecione..." else []
-    curso_sel = st.selectbox("Curso:", ["Aguardando área..."] + opcoes, disabled=(area_sel == "Selecione..."))
+    curso_sel = st.selectbox("Escolha o Curso:", ["Aguardando área..."] + opcoes, disabled=(area_sel == "Selecione..."))
 
     with st.form("form_3d", clear_on_submit=True):
         nome = st.text_input("Nome Completo")
         email = st.text_input("E-mail")
         whats = st.text_input("WhatsApp")
-        obs = st.text_area("Observações")
-        enviar = st.form_submit_button("REGISTRAR AGORA")
+        obs = st.text_area("Mensagem ou Dúvida")
+        enviar = st.form_submit_button("REGISTRAR INTERESSE")
 
         if enviar:
             if area_sel != "Selecione..." and nome and email:
                 data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 if salvar_novo_lead([nome, email, whats, area_sel, curso_sel, obs, data_atual]):
-                    st.success(f"Excelente, {nome}! Registramos seu interesse. Entraremos em contato assim que as inscrições para o curso estiverem abertas.")
+                    st.success(f"Obrigado, {nome}! Recebemos seu interesse no curso de {curso_sel}.")
                     st.balloons()
-            else: st.error("Por favor, preencha os campos obrigatórios.")
+            else: st.error("Preencha seu nome, e-mail e selecione um curso.")
 
-# --- ADMIN (SEGURANÇA REFORÇADA COM SECRETS) ---
+# Área Admin protegida por Secrets
 st.sidebar.markdown("---")
-st.sidebar.subheader("🔒 Área Administrativa")
-
-try:
-    senha_mestra = st.secrets["auth"]["admin_password"]
-except:
-    senha_mestra = None
-
-senha_digitada = st.sidebar.text_input("Senha", type="password")
-
-if senha_digitada:
-    if senha_mestra and senha_digitada == senha_mestra:
-        st.sidebar.success("Acesso Liberado")
-        if st.sidebar.checkbox("Ver Dados"):
-            df = ler_todos_leads()
-            if not df.empty: 
-                st.markdown("### 📊 Leads Cadastrados")
-                st.dataframe(df)
-    else:
-        st.sidebar.error("Senha incorreta")
+if st.sidebar.text_input("Acesso Administrativo", type="password") == st.secrets.get("auth", {}).get("admin_password"):
+    st.sidebar.success("Logado")
+    # Aqui você pode adicionar funções de visualização de dados se desejar
