@@ -7,58 +7,70 @@ from bs4 import BeautifulSoup
 from PIL import Image
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+import base64
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- CSS: ESTILO 3D AVANÇADO (BOTÕES E IMAGENS) ---
+# Função para converter imagem local em base64 (necessário para o HTML/CSS encontrar a imagem)
+def get_base64_of_bin_file(bin_file):
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
+# --- CSS: ESTILO 3D AVANÇADO E LINKS ---
 st.markdown("""
     <style>
     /* Fundo Neumórfico */
     .stApp { background-color: #e0e5ec; }
     
-    /* Cabeçalho 3D */
+    /* Cabeçalho 3D Suave */
     .header-senai { 
         background: #ff0000; 
-        padding: 20px;
+        padding: 15px;
         border-radius: 20px;
         color: white; 
         text-align: center; 
-        margin: 10px auto 30px auto;
-        max-width: 95%;
-        box-shadow: 9px 9px 16px #b8b9be, -9px -9px 16px #ffffff;
+        margin: 10px auto 25px auto;
+        max-width: 90%;
+        box-shadow: 7px 7px 14px #b8b9be, -7px -7px 14px #ffffff;
         border: 1px solid rgba(255,255,255,0.2);
     }
+    .header-senai h1 { font-size: 24px !important; margin-bottom: 0px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
 
-    /* EFEITO BOTÃO 3D PARA AS IMAGENS */
-    .img-container {
-        display: flex;
-        justify-content: center;
-        padding: 10px;
+    /* Container das Imagens/Links */
+    .img-3d-link {
+        display: block;
+        margin: auto;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        border-radius: 25px;
+        overflow: hidden;
+        width: fit-content;
     }
     
-    /* Estilo da Imagem como Botão (Alto Relevo) */
-    [data-testid="stImage"] img {
-        border-radius: 25px !important;
-        background: #e0e5ec;
-        box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff !important;
-        transition: all 0.3s ease-in-out !important;
-        cursor: pointer;
-        border: 5px solid #e0e5ec !important;
+    /* Efeito de Botão 3D nas Imagens */
+    .img-3d-link img {
+        border-radius: 25px;
+        box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff;
+        transition: all 0.3s ease;
+        border: 4px solid #e0e5ec;
     }
 
-    /* Efeito de Clique/Hover na Imagem (Baixo Relevo) */
-    [data-testid="stImage"] img:hover {
+    /* Efeito ao passar o mouse (Hover/Clique) */
+    .img-3d-link:hover {
         transform: scale(0.98);
-        box-shadow: inset 6px 6px 12px #bebebe, inset -6px -6px 12px #ffffff !important;
-        filter: brightness(1.05);
+    }
+    .img-3d-link:hover img {
+        box-shadow: inset 6px 6px 12px #bebebe, inset -6px -6px 12px #ffffff;
+        filter: brightness(1.1);
     }
 
-    /* Formulário Escavado */
+    /* Formulário Escavado (Baixo Relevo) */
     [data-testid="stForm"] {
         background-color: #e0e5ec !important;
         border-radius: 30px !important;
-        padding: 3rem !important;
+        padding: 2.5rem !important;
         box-shadow: inset 8px 8px 16px #bebebe, inset -8px -8px 16px #ffffff !important;
         border: none !important;
     }
@@ -71,16 +83,15 @@ st.markdown("""
         border: none !important;
     }
 
-    /* Botão de Envio 3D */
+    /* Botão Enviar 3D */
     div.stButton > button { 
         background-color: #ff0000 !important;
         color: white !important; 
         font-weight: bold !important; 
-        height: 55px !important;
+        height: 50px !important;
         border-radius: 15px !important; 
         box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff !important;
         border: none !important;
-        transition: 0.2s;
     }
     div.stButton > button:hover {
         box-shadow: 2px 2px 5px #b8b9be, -2px -2px 5px #ffffff !important;
@@ -89,11 +100,16 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+# --- CONFIGURAÇÕES DE LINKS E CAMINHOS ---
+url_senai = "https://www.sp.senai.br/cursos?unidade=122"
+path_logo = os.path.join("imagens", "logo.png")
+path_fachada = os.path.join("imagens", "fachada.jpg")
+
 # --- SCRAPING DINÂMICO ---
 @st.cache_data(ttl=43200)
 def buscar_cursos_dinamicos():
     api_key = "3e14f4393c5a034104b37c071a0d021f" 
-    url_alvo = "https://www.sp.senai.br/cursos?unidade=122"
+    url_alvo = url_senai
     mapa_fallback = {
         "Tecnologia da Informação": ["Excel Avançado", "IA Generativa", "Python", "Power BI"],
         "Eletroeletrônica": ["Eletricista Instalador", "Comandos Elétricos"],
@@ -163,52 +179,62 @@ def ler_todos_leads():
 
 # --- INTERFACE ---
 
-# 1. Logo (Botão 3D)
-path_logo = os.path.join("imagens", "logo.png")
+# 1. Logo com Link e Efeito 3D
 if os.path.exists(path_logo):
-    c_logo1, c_logo2, c_logo3 = st.columns([2, 1, 2])
-    with c_logo2: st.image(Image.open(path_logo), width=150)
+    logo_base64 = get_base64_of_bin_file(path_logo)
+    c_l1, c_l2, c_l3 = st.columns([2, 1, 2])
+    with c_l2:
+        st.markdown(f'''
+            <a href="{url_senai}" target="_blank" class="img-3d-link">
+                <img src="data:image/png;base64,{logo_base64}" width="150">
+            </a>
+        ''', unsafe_allow_html=True)
 
 # Cabeçalho
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse</p></div>', unsafe_allow_html=True)
 
-# 2. Fachada (Botão 3D)
-path_fachada = os.path.join("imagens", "fachada.jpg")
+# 2. Fachada com Link e Efeito 3D
 if os.path.exists(path_fachada):
-    c_fac1, c_fac2, c_fac3 = st.columns([1, 6, 1])
-    with c_fac2: st.image(Image.open(path_fachada), use_container_width=True)
+    fachada_base64 = get_base64_of_bin_file(path_fachada)
+    c_f1, c_f2, c_f3 = st.columns([1, 6, 1])
+    with c_f2:
+        st.markdown(f'''
+            <a href="{url_senai}" target="_blank" class="img-3d-link">
+                <img src="data:image/jpeg;base64,{fachada_base64}" style="width: 100%;">
+            </a>
+        ''', unsafe_allow_html=True)
 
-with st.spinner("Carregando cursos..."):
+with st.spinner("Sincronizando cursos..."):
     dados_cursos = buscar_cursos_dinamicos()
 
-# Área do Formulário
-col_f1, col_f2, col_f3 = st.columns([1, 2, 1])
-with col_f2:
-    st.markdown("<h3 style='text-align: center; color: #333; margin-top: 20px;'>📋 Cadastro de Interesse</h3>", unsafe_allow_html=True)
+# Formulário
+col_main1, col_main2, col_main3 = st.columns([1, 2, 1])
+with col_main2:
+    st.markdown("<h3 style='text-align: center; color: #333;'>📋 Cadastro de Interesse</h3>", unsafe_allow_html=True)
     
-    area_escolhida = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
-    opcoes_cursos = sorted(dados_cursos[area_escolhida]) if area_escolhida != "Selecione..." else []
-    curso_escolhido = st.selectbox("Curso de Interesse:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_escolhida == "Selecione..."))
+    area_sel = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
+    opcoes = sorted(dados_cursos[area_sel]) if area_sel != "Selecione..." else []
+    curso_sel = st.selectbox("Curso:", ["Aguardando área..."] + opcoes, disabled=(area_sel == "Selecione..."))
 
-    with st.form("form_interessado", clear_on_submit=True):
+    with st.form("form_3d", clear_on_submit=True):
         nome = st.text_input("Nome Completo")
         email = st.text_input("E-mail")
-        whats = st.text_input("WhatsApp (com DDD)")
-        sugestao = st.text_area("Observações:")
-        btn_enviar = st.form_submit_button("REGISTRAR AGORA")
+        whats = st.text_input("WhatsApp")
+        obs = st.text_area("Observações")
+        enviar = st.form_submit_button("REGISTRAR AGORA")
 
-        if btn_enviar:
-            if area_escolhida != "Selecione..." and nome and email:
-                data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                if salvar_novo_lead([nome, email, whats, area_escolhida, curso_escolhido, sugestao, data_atual]):
-                    st.success(f"Excelente, {nome}! Seu interesse foi registrado.")
+        if enviar:
+            if area_sel != "Selecione..." and nome and email:
+                data = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                if salvar_novo_lead([nome, email, whats, area_sel, curso_sel, obs, data]):
+                    st.success("Sucesso! Registro realizado.")
                     st.balloons()
-            else: st.error("Por favor, preencha os campos obrigatórios.")
+            else: st.error("Preencha os campos obrigatórios.")
 
 # --- ADMIN ---
 st.sidebar.markdown("---")
 senha = st.sidebar.text_input("Senha", type="password")
 if senha == "Celina2610$$":
-    if st.sidebar.checkbox("Ver Leads"):
+    if st.sidebar.checkbox("Ver Dados"):
         df = ler_todos_leads()
         if not df.empty: st.dataframe(df)
