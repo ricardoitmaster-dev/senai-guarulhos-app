@@ -122,13 +122,27 @@ def ler_todos_leads():
         return pd.DataFrame(values[1:], columns=values[0]) if values else pd.DataFrame()
     except: return pd.DataFrame()
 
-# --- INTERFACE ---
+# --- INTERFACE: LOGO E CABEÇALHO ---
 path_logo = os.path.join("imagens", "logo.png")
-if os.path.exists(path_logo):
-    c_logo1, c_logo2, c_logo3 = st.columns([2, 1, 2])
-    with c_logo2: st.image(Image.open(path_logo), width=160)
+try:
+    if os.path.exists(path_logo):
+        c_logo1, c_logo2, c_logo3 = st.columns([2, 1, 2])
+        with c_logo2: st.image(Image.open(path_logo), width=160)
+except: pass
 
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse</p></div>', unsafe_allow_html=True)
+
+# --- IMAGEM DA FACHADA (REINSERIDA COM TRATAMENTO DE ERRO) ---
+path_fachada = os.path.join("imagens", "fachada.jpg")
+try:
+    if os.path.exists(path_fachada):
+        c_fac1, c_fac2, c_fac3 = st.columns([1, 6, 1]) # Coluna central maior para a fachada
+        with c_fac2: 
+            img_fachada = Image.open(path_fachada)
+            st.image(img_fachada, use_container_width=True, caption="SENAI Hermenegildo Parente - Guarulhos")
+except Exception as e:
+    # Se der erro, não exibe nada e não quebra o app
+    pass
 
 with st.spinner("Sincronizando cursos..."):
     dados_cursos = buscar_cursos_dinamicos()
@@ -145,13 +159,12 @@ with col_f2:
         nome = st.text_input("Nome Completo")
         email = st.text_input("E-mail")
         whats = st.text_input("WhatsApp")
-        sugestao = st.text_area("Sugestão de outro curso ou comentário:") # CAMPO REINSERIDO
+        sugestao = st.text_area("Sugestão de outro curso ou comentário:")
         btn_enviar = st.form_submit_button("REGISTRAR INTERESSE")
 
     if btn_enviar:
         if area_escolhida != "Selecione..." and nome and email:
             data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            # Agora salvamos também a sugestão na planilha
             if salvar_novo_lead([nome, email, whats, area_escolhida, curso_escolhido, sugestao, data_atual]):
                 st.markdown(f"""
                     <div class="sucesso-msg">
