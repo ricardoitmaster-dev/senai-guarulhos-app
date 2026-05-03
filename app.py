@@ -58,22 +58,22 @@ def salvar_dados(df):
     except: return False
 
 # --- FUNÇÃO DO ROBÔ DE CONSULTA (WEB SCRAPING) ---
-def verificar_curso_no_site(nome_curso):
+def consultar_detalhes_curso(nome_curso):
     url_unidade = "https://www.sp.senai.br/unidade/guarulhos/"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
     try:
         response = requests.get(url_unidade, headers=headers, timeout=10)
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
             texto_pagina = soup.get_text().lower()
-            # Busca simples por palavra-chave do curso
+            
             if nome_curso.lower() in texto_pagina:
-                return True
-        return False
+                # Se o curso existe, retornamos um status positivo
+                # Nota: Extrair data/valor exato requer análise das classes CSS do site
+                return {"encontrado": True, "info": "Consulte as condições especiais e valores na secretaria."}
+        return {"encontrado": False}
     except:
-        return False
+        return {"encontrado": False}
 
 # --- MAPEAMENTO DE CURSOS ---
 dados_cursos = {
@@ -108,29 +108,34 @@ with col2:
     st.write("### 📋 Ficha de Interesse")
     
     area_sel = st.selectbox("1. Selecione a Área:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
-    
     lista_cursos = ["Selecione..."] + sorted(dados_cursos[area_sel]) if area_sel != "Selecione..." else ["Selecione a área"]
     curso_sel = st.selectbox("2. Selecione o Curso:", lista_cursos)
 
-    # LÓGICA DE CONSULTA AUTOMÁTICA
-    if curso_sel not in ["Selecione...", "Selecione a área"]:
-        with st.spinner(f'Verificando disponibilidade de {curso_sel}...'):
-            existe_no_site = verificar_curso_no_site(curso_sel)
-            
-            if existe_no_site:
-                st.success(f"✅ **O curso de {curso_sel} está disponível!**")
-                st.info("📍 **Próximo passo:** Para ver datas e turmas, vá até a secretaria do **SENAI Guarulhos 122**.")
-            else:
-                st.warning(f"ℹ️ **Curso em lista de espera.**")
-                st.write("Deixe seu contato abaixo para ser avisado da abertura de novas turmas.")
+    status_curso = {"encontrado": False}
 
+    # LÓGICA DE CONSULTA AUTOMÁTICA (ANTES DO REGISTRO)
+    if curso_sel not in ["Selecione...", "Selecione a área"]:
+        with st.spinner(f'Buscando informações de {curso_sel}...'):
+            status_curso = consultar_detalhes_curso(curso_sel)
+            
+            if status_curso["encontrado"]:
+                st.success(f"✅ **O curso de {curso_sel} está com turmas disponíveis/previstas!**")
+                st.write(f"ℹ️ **Informações do Portal:** {status_curso['info']}")
+                st.markdown("---")
+                st.write("Para reservar sua vaga e confirmar os detalhes, complete o cadastro abaixo:")
+            else:
+                st.warning(f"ℹ️ **Este curso não possui turmas abertas no momento.**")
+                st.write("Preencha o formulário abaixo para entrar na **Lista de Espera**. Avisaremos você assim que novas vagas surgirem!")
+
+    # CAMPOS DE DADOS
     with st.form("form_final", clear_on_submit=True):
         nome = st.text_input("Nome Completo")
         email = st.text_input("E-mail")
-        whats = st.text_input("WhatsApp")
-        sugestao = st.text_area("Sugestões ou dúvidas")
+        whats = st.text_input("WhatsApp (com DDD)")
+        sugestao = st.text_area("Dúvidas ou Comentários")
         btn = st.form_submit_button("REGISTRAR INTERESSE")
 
+# --- LÓGICA DE ENVIO E MENSAGEM FINAL ---
 if btn:
     if nome and email and area_sel != "Selecione..." and curso_sel != "Selecione..." and service:
         df_atual = ler_dados()
@@ -141,9 +146,22 @@ if btn:
         }])
         
         if salvar_dados(pd.concat([df_atual, novo], ignore_index=True)):
-            st.success(f"### ✅ Sucesso, {nome}!")
             st.balloons()
+            
+            # MENSAGENS PERSONALIZADAS PÓS-REGISTRO
+            if status_curso["encontrado"]:
+                st.success(f"### Registro Concluído, {nome}!")
+                st.markdown(f"""
+                📍 **O QUE FAZER AGORA?**  
+                Como este curso está ativo, pedimos que você se dirija à nossa secretaria para efetivar sua matrícula:
+                
+                **Endereço:** Rua Saquaquara, 150 - Pres. Dutra, Guarulhos - SP (Unidade 122)  
+                **Horário da Secretaria:** Segunda a Sexta, das 08h às 20h | Sábados, das 08h às 12h.
+                """)
+            else:
+                st.info(f"### Registro na Lista de Espera, {nome}!")
+                st.write("Seus dados foram salvos com sucesso. Nossa equipe entrará em contato com você assim que o curso estiver disponível no SENAI Guarulhos 122.")
         else:
-            st.error("Erro ao salvar dados.")
+            st.error("Erro ao conectar com a base de dados. Tente novamente.")
     else:
-        st.warning("Preencha todos os campos obrigatórios.")
+        st.warning("Preencha todos os campos obrigatórios (Nome, E-mail e Curso).")
