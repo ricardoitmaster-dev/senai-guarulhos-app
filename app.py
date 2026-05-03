@@ -87,18 +87,17 @@ def ler_todos_leads():
 # --- CABEÇALHO ---
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse</p></div>', unsafe_allow_html=True)
 
-# --- EXIBIÇÃO DA IMAGEM DA ESCOLA (CORREÇÃO DA IMAGEM QUEBRADA) ---
+# --- EXIBIÇÃO DA IMAGEM DA ESCOLA (CORREÇÃO DEFINITIVA) ---
 c_img1, c_img2, c_img3 = st.columns([1, 4, 1])
 with c_img2:
-    # URL da fachada oficial do SENAI
-    url_fachada = "https://sp.senai.br/unidades/guarulhos/image/unidade-guarulhos.jpg"
+    # Apenas tenta carregar imagens locais garantidas para evitar o ícone quebrado
+    path_escola = os.path.join("imagens", "frente_escola.png")
+    path_logo = os.path.join("imagens", "logo.png")
     
-    # Tentativa de carregar a imagem de forma segura
-    try:
-        st.image(url_fachada, use_container_width=True, caption="Unidade SENAI Guarulhos 122")
-    except:
-        # Se o link falhar, ele apenas mostra um aviso discreto em vez do ícone de erro
-        st.info("Aguardando carregamento da imagem da unidade...")
+    if os.path.exists(path_escola):
+        st.image(Image.open(path_escola), use_container_width=True)
+    elif os.path.exists(path_logo):
+        st.image(Image.open(path_logo), use_container_width=True)
 
 # --- INTERFACE PRINCIPAL ---
 dados_cursos = buscar_cursos_dinamicos()
