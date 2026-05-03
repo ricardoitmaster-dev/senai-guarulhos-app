@@ -11,7 +11,7 @@ from googleapiclient.discovery import build
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- CSS: DESIGN VITRIFICADO ---
+# --- CSS: ESTILO VITRIFICADO PROFISSIONAL ---
 st.markdown("""
     <style>
     .stApp { background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%); }
@@ -35,26 +35,19 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- SCRAPER DINÂMICO (SOLUÇÃO DE ESCALA) ---
+# --- BANCO DE DADOS DE CURSOS (DINÂMICO) ---
 @st.cache_data(ttl=86400)
 def buscar_cursos_dinamicos():
-    # Base de dados robusta (Fallback) baseada na sua expertise no SENAI
+    # Estrutura robusta para garantir o funcionamento imediato
     mapa = {
         "Tecnologia da Informação": ["Excel Avançado", "IA Generativa", "Python", "Power BI", "Desenvolvimento de Sistemas"],
         "Eletroeletrônica": ["Eletricista Instalador", "Comandos Elétricos", "CLP", "Manutenção Eletrônica"],
         "Metalmecânica": ["Mecânico de Usinagem", "Soldagem MAG/TIG", "Operador de CNC", "Mecânico de Manutenção"],
         "Gestão e Logística": ["Almoxarife", "Assistente Administrativo", "Assistente de RH", "Logística"]
     }
-    try:
-        # Tenta buscar do site oficial para manter sempre atualizado
-        res = requests.get("https://guarulhos.sp.senai.br/cursos", timeout=5)
-        if res.status_code == 200:
-            return mapa # Aqui pode ser expandido com lógica BS4 se necessário
-        return mapa
-    except:
-        return mapa
+    return mapa
 
-# --- GOOGLE SHEETS ---
+# --- CONEXÃO GOOGLE SHEETS ---
 @st.cache_resource
 def conectar_google_sheets():
     try:
@@ -72,16 +65,6 @@ def conectar_google_sheets():
         return build("sheets", "v4", credentials=creds)
     except: return None
 
-def ler_todos_leads():
-    try:
-        service = conectar_google_sheets()
-        url = st.secrets["connections"]["gsheets"]["spreadsheet"]
-        sheet_id = url.split("/d/")[1].split("/")[0]
-        result = service.spreadsheets().values().get(spreadsheetId=sheet_id, range="A1:Z2000").execute()
-        values = result.get("values", [])
-        return pd.DataFrame(values[1:], columns=values[0]) if values else pd.DataFrame()
-    except: return pd.DataFrame()
-
 def salvar_novo_lead(lista_dados):
     try:
         service = conectar_google_sheets()
@@ -94,10 +77,20 @@ def salvar_novo_lead(lista_dados):
         return True
     except: return False
 
+def ler_todos_leads():
+    try:
+        service = conectar_google_sheets()
+        url = st.secrets["connections"]["gsheets"]["spreadsheet"]
+        sheet_id = url.split("/d/")[1].split("/")[0]
+        result = service.spreadsheets().values().get(spreadsheetId=sheet_id, range="A1:Z2000").execute()
+        values = result.get("values", [])
+        return pd.DataFrame(values[1:], columns=values[0]) if values else pd.DataFrame()
+    except: return pd.DataFrame()
+
 # --- INTERFACE PRINCIPAL ---
 dados_cursos = buscar_cursos_dinamicos()
 
-# Recuperação da Logística de Imagens (Logo Ricardo IT Master / SENAI)
+# Exibição da Logo (se existir a pasta e o arquivo)
 path_logo = os.path.join("imagens", "logo.png")
 if os.path.exists(path_logo):
     c_img1, c_img2, c_img3 = st.columns([2, 1, 2])
@@ -108,13 +101,14 @@ st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - 
 col1, col2, col3 = st.columns([1, 2, 1])
 
 with col2:
-    st.markdown("<h3 style='text-align: center;'>📋 Escolha seu Futuro</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center;'>📋 Escolha seu Curso</h3>", unsafe_allow_html=True)
     
-    # Áreas e Cursos Separados conforme solicitado
-    area_escolhida = st.selectbox("1. Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
+    # 1. Seleciona a Área
+    area_escolhida = st.selectbox("1. Selecione a Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
     
+    # 2. Seleciona o Curso (Filtrado)
     opcoes_cursos = sorted(dados_cursos[area_escolhida]) if area_escolhida != "Selecione..." else []
-    curso_escolhido = st.selectbox("2. Curso de Interesse:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_escolhida == "Selecione..."))
+    curso_escolhido = st.selectbox("2. Selecione o Curso:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_escolhida == "Selecione..."))
 
     with st.form("form_interessado", clear_on_submit=True):
         nome = st.text_input("Nome Completo")
@@ -126,35 +120,28 @@ with col2:
     if btn_enviar:
         if area_escolhida != "Selecione..." and curso_escolhido != "Aguardando área..." and nome and email:
             data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            # Salva na Planilha
             if salvar_novo_lead([nome, email, whats, area_escolhida, curso_escolhido, data_atual]):
-                # Mensagem específica para o interessado conforme solicitado
+                # Mensagem de sucesso personalizada para o aluno
                 st.success(f"✅ Olá {nome}! Recebemos seu interesse no curso de **{curso_escolhido}**. Assim que novas turmas forem abertas, nossa equipe entrará em contato com você!")
                 st.balloons()
             else:
-                st.error("Erro técnico ao salvar. Por favor, tente novamente.")
+                st.error("Erro ao salvar os dados. Verifique a conexão com o Google Sheets.")
         else:
-            st.warning("⚠️ Preencha todos os campos e selecione o curso corretamente.")
+            st.warning("⚠️ Por favor, preencha todos os campos corretamente.")
 
-# --- PAINEL LATERAL DE ADM (REINTEGRADO) ---
+# --- PAINEL LATERAL ADM ---
 st.sidebar.markdown("## 🔒 Área Administrativa")
-senha_adm = st.sidebar.text_input("Senha de Gestor", type="password")
+senha = st.sidebar.text_input("Senha", type="password")
 
-if senha_adm == "senai122": # Senha padrão da unidade
+if senha == "senai122":
     st.sidebar.success("Acesso Liberado")
-    
-    if st.sidebar.button("🔄 Atualizar Banco de Cursos"):
-        st.cache_data.clear()
-        st.rerun()
-
-    st.sidebar.markdown("---")
-    if st.sidebar.checkbox("Visualizar Leads Captados"):
+    if st.sidebar.checkbox("Visualizar Interessados"):
         df_leads = ler_todos_leads()
         if not df_leads.empty:
-            st.write("### Relatório de Interessados (Larga Escala)")
-            st.dataframe(df_leads, use_container_width=True)
+            st.write("### Relatório de Leads")
+            st.dataframe(df_leads)
             
-            # Botão de Exportação
+            # Botão para baixar CSV
             csv = df_leads.to_csv(index=False).encode('utf-8-sig')
-            st.sidebar.download_button("📥 Baixar Leads (CSV)", csv, "leads_senai_122.csv", "text/csv")
-        else:
-            st.sidebar.info("Nenhum registro encontrado.")
+            st.sidebar.download_button("📥 Baixar CSV", csv, "leads_senai.csv", "text/csv")
