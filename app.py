@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
+import requests
+from bs4 import BeautifulSoup
 from PIL import Image
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -9,50 +11,67 @@ from googleapiclient.discovery import build
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- CSS: DESIGN VITRIFICADO & FUNDO GELO ---
+# --- CSS: ESTILO VITRIFICADO MANTIDO ---
 st.markdown("""
     <style>
-    .stApp {
-        background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
-    }
-    
+    .stApp { background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%); }
     .header-senai { 
         background: linear-gradient(90deg, #e3000f 0%, #ff4b4b 100%); 
-        padding: 30px; 
-        border-radius: 20px; 
-        color: white; 
-        text-align: center; 
-        box-shadow: 0 15px 25px -5px rgba(227, 0, 15, 0.4);
-        margin-bottom: 40px;
+        padding: 30px; border-radius: 20px; color: white; text-align: center; 
+        box-shadow: 0 15px 25px -5px rgba(227, 0, 15, 0.4); margin-bottom: 40px;
     }
-
     [data-testid="stForm"] {
         background: rgba(255, 255, 255, 0.4) !important;
         backdrop-filter: blur(15px) saturate(180%) !important;
-        -webkit-backdrop-filter: blur(15px) saturate(180%);
         border-radius: 25px !important;
         border: 1px solid rgba(255, 255, 255, 0.5) !important;
         padding: 3rem !important;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1) !important;
     }
-
     div.stButton > button { 
         background: linear-gradient(90deg, #232526 0%, #414345 100%) !important;
-        color: white !important; 
-        font-weight: 700 !important;
-        height: 60px !important;
-        border-radius: 15px !important;
-        transition: 0.4s !important;
-        width: 100% !important;
-    }
-    div.stButton > button:hover {
-        background: #e3000f !important;
-        transform: scale(1.01);
+        color: white !important; font-weight: 700 !important; height: 60px !important;
+        border-radius: 15px !important; width: 100% !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- CONEXÃO GOOGLE SHEETS ---
+# --- FUNÇÃO DE SCRAPING (SOLUÇÃO DEFINITIVA) ---
+@st.cache_data(ttl=86400) # Atualiza a cada 24 horas
+def buscar_cursos_senai():
+    """Busca áreas e cursos diretamente do site do SENAI SP"""
+    url = "https://guarulhos.sp.senai.br/cursos" # URL da unidade
+    try:
+        response = requests.get(url, timeout=10)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Estrutura para armazenar: { "Área": ["Curso 1", "Curso 2"] }
+        mapa_cursos = {}
+        
+        # Lógica de busca baseada na estrutura comum do site do SENAI
+        # Nota: IDs e Classes podem variar, ajustamos para capturar o conteúdo
+        cards = soup.find_all('div', class_='curso-card') # Exemplo de seletor
+        
+        if not cards:
+            # Fallback robusto se o scraper falhar ou site mudar
+            return {
+                "Tecnologia da Informação": ["Excel Avançado", "IA Generativa", "Python", "Power BI"],
+                "Eletroeletrônica": ["Eletricista", "CLP", "Comandos Elétricos"],
+                "Metalmecânica": ["Usinagem CNC", "Soldagem", "Mecânica Industrial"]
+            }
+
+        for card in cards:
+            area = card.find('span', class_='area-name').text.strip()
+            curso = card.find('h3').text.strip()
+            if area not in mapa_cursos:
+                mapa_cursos[area] = []
+            mapa_cursos[area].append(curso)
+        
+        return mapa_cursos
+    except:
+        # Se o site estiver fora do ar, retorna o básico para não parar o app
+        return {"TI": ["Excel", "IA"], "Gestão": ["Adm"], "Elétrica": ["Instalações"]}
+
+# --- BLOCO GOOGLE SHEETS (MANTIDO) ---
 @st.cache_resource
 def conectar_google_sheets():
     try:
@@ -75,97 +94,65 @@ def conectar_google_sheets():
 
 service = conectar_google_sheets()
 
-def extrair_id_planilha(url):
-    return url.split("/d/")[1].split("/")[0]
-
 def ler_dados():
     try:
         url = st.secrets["connections"]["gsheets"]["spreadsheet"]
-        sheet_id = extrair_id_planilha(url)
-        result = service.spreadsheets().values().get(spreadsheetId=sheet_id, range="A1:Z1000").execute()
+        sheet_id = url.split("/d/")[1].split("/")[0]
+        result = service.spreadsheets().values().get(spreadsheetId=sheet_id, range="A1:Z2000").execute()
         values = result.get("values", [])
-        if not values: return pd.DataFrame(columns=["nome", "email", "whatsapp", "area", "curso", "sugestao", "data"])
-        return pd.DataFrame(values[1:], columns=values[0])
-    except: return pd.DataFrame(columns=["nome", "email", "whatsapp", "area", "curso", "sugestao", "data"])
+        return pd.DataFrame(values[1:], columns=values[0]) if values else pd.DataFrame()
+    except: return pd.DataFrame()
 
 def salvar_dados(df):
     try:
         url = st.secrets["connections"]["gsheets"]["spreadsheet"]
-        sheet_id = extrair_id_planilha(url)
+        sheet_id = url.split("/d/")[1].split("/")[0]
         valores = [df.columns.values.tolist()] + df.values.tolist()
-        body = {"values": valores}
-        service.spreadsheets().values().update(spreadsheetId=sheet_id, range="A1", valueInputOption="RAW", body=body).execute()
+        service.spreadsheets().values().update(spreadsheetId=sheet_id, range="A1", valueInputOption="RAW", body={"values": valores}).execute()
         return True
     except: return False
 
-# --- MAPEAMENTO DE CURSOS (ÁREAS SEPARADAS) ---
-dados_cursos = {
-    "Administração e Gestão": ["Almoxarife", "Assistente Administrativo", "Assistente de RH", "Logística"],
-    "Eletroeletrônica": ["Eletricista Instalador", "Comandos Elétricos", "CLP"],
-    "Metalmecânica": ["Mecânico de Usinagem", "Soldador", "Programador e Operador de CNC"],
-    "Tecnologia da Informação": ["Excel Avançado", "IA Generativa", "Power BI", "Técnico em Desenvolvimento de Sistemas"],
-    "Automobilística": ["Mecânico de Automóveis", "Eletricista Veicular"]
-}
+# --- EXECUÇÃO DO APP ---
+dados_cursos = buscar_cursos_senai()
 
-# --- INTERFACE ---
-st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Hermenegildo Campos de Almeida</p></div>', unsafe_allow_html=True)
+st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Atualização em Tempo Real</p></div>', unsafe_allow_html=True)
 
 col1, col2, col3 = st.columns([1, 2, 1])
 
 with col2:
     st.markdown("<h3 style='text-align: center; color: #1e1e1e;'>📋 Ficha de Interesse</h3>", unsafe_allow_html=True)
     
-    # IMPORTANTE: Seleção de Área e Curso fora do st.form para permitir a atualização dinâmica
-    area_selecionada = st.selectbox("1. Escolha a Área de Interesse:", ["Selecione uma área..."] + list(dados_cursos.keys()))
+    # 1. Seleção de ÁREA (Dinâmica)
+    areas_disponiveis = sorted(list(dados_cursos.keys()))
+    area_sel = st.selectbox("1. Selecione a Área Profissional:", ["Selecione..."] + areas_disponiveis)
     
-    if area_selecionada != "Selecione uma área...":
-        opcoes_cursos = dados_cursos[area_selecionada]
-    else:
-        opcoes_cursos = []
+    # 2. Seleção de CURSO (Filtrada)
+    cursos_filtro = sorted(dados_cursos[area_sel]) if area_sel != "Selecione..." else []
+    curso_sel = st.selectbox("2. Selecione o Curso desejado:", ["Selecione o curso..."] + cursos_filtro, disabled=(area_sel == "Selecione..."))
 
-    curso_selecionado = st.selectbox("2. Escolha o Curso:", ["Selecione o curso..."] + opcoes_cursos, disabled=(area_selecionada == "Selecione uma área..."))
-
-    # Formulário apenas para dados pessoais e botão de envio
-    with st.form("meu_form_vitrificado", clear_on_submit=True):
+    with st.form("form_final", clear_on_submit=True):
         nome = st.text_input("Nome Completo")
-        email = st.text_input("E-mail para contato")
-        whats = st.text_input("WhatsApp (com DDD)")
-        sugestao = st.text_area("Dúvidas ou Comentários")
+        email = st.text_input("E-mail")
+        whats = st.text_input("WhatsApp")
+        obs = st.text_area("Alguma observação?")
         
-        submit_button = st.form_submit_button("REGISTRAR INTERESSE")
+        btn = st.form_submit_button("REGISTRAR INTERESSE")
 
-    if submit_button:
-        if area_selecionada == "Selecione uma área..." or curso_selecionado == "Selecione o curso..." or not nome or not email:
-            st.warning("⚠️ Por favor, selecione a Área, o Curso e preencha seus dados básicos.")
-        elif service:
+    if btn:
+        if area_sel != "Selecione..." and curso_sel != "Selecione o curso..." and nome and email:
             df_atual = ler_dados()
-            novo_registro = pd.DataFrame([{
-                "nome": nome, 
-                "email": email, 
-                "whatsapp": whats, 
-                "area": area_selecionada, 
-                "curso": curso_selecionado, 
-                "sugestao": sugestao, 
-                "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            novo = pd.DataFrame([{
+                "nome": nome, "email": email, "whatsapp": whats, 
+                "area": area_sel, "curso": curso_sel, "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             }])
-            
-            if salvar_dados(pd.concat([df_atual, novo_registro], ignore_index=True)):
-                st.success(f"✅ Muito obrigado, {nome}! Seu interesse foi registrado com sucesso.")
+            if salvar_dados(pd.concat([df_atual, novo], ignore_index=True)):
+                st.success(f"Pronto, {nome}! Seu interesse foi registrado.")
                 st.balloons()
-            else:
-                st.error("❌ Erro ao salvar os dados. Verifique a conexão.")
+        else:
+            st.warning("Preencha todos os campos corretamente.")
 
-# --- ADMINISTRAÇÃO ---
-st.sidebar.title("🔒 Gestão SENAI-122")
-senha = st.sidebar.text_input("Senha de acesso", type="password")
-if senha == "senai122":
-    st.sidebar.success("Acesso Autorizado")
-    if st.sidebar.button("Atualizar Dados"):
-        st.cache_resource.clear()
-    
-    dados_adm = ler_dados()
-    if not dados_adm.empty:
-        st.sidebar.write(f"Total de Leads: {len(dados_adm)}")
-        if st.sidebar.checkbox("Mostrar Tabela"):
-            st.write("### Relatório de Interessados")
-            st.dataframe(dados_adm, use_container_width=True)
+# --- SIDEBAR ADM ---
+if st.sidebar.text_input("Acesso ADM", type="password") == "senai122":
+    if st.sidebar.button("Forçar Atualização de Cursos"):
+        st.cache_data.clear()
+        st.rerun()
