@@ -3,5 +3,5 @@ pandas
 google-api-python-client
 google-auth
 requests
+beautifulsoup4
 Pillow
-playwright
