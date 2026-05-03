@@ -11,13 +11,13 @@ from googleapiclient.discovery import build
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- CSS: ESTILO 3D (NEUMORFISMO) ---
+# --- CSS: ESTILO 3D AVANÇADO (BOTÕES E IMAGENS) ---
 st.markdown("""
     <style>
-    /* Fundo geral ligeiramente cinza para destacar o 3D branco */
+    /* Fundo Neumórfico */
     .stApp { background-color: #e0e5ec; }
     
-    /* Cabeçalho em Alto Relevo 3D */
+    /* Cabeçalho 3D */
     .header-senai { 
         background: #ff0000; 
         padding: 20px;
@@ -26,59 +26,66 @@ st.markdown("""
         text-align: center; 
         margin: 10px auto 30px auto;
         max-width: 95%;
-        /* Sombras 3D: Brilho em cima/esquerda, Sombra embaixo/direita */
-        box-shadow: 9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5);
+        box-shadow: 9px 9px 16px #b8b9be, -9px -9px 16px #ffffff;
         border: 1px solid rgba(255,255,255,0.2);
     }
-    .header-senai h1 { font-size: 24px !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
 
-    /* Imagens com efeito de profundidade */
-    img { 
-        border-radius: 20px;
-        box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff;
-        transition: 0.4s;
+    /* EFEITO BOTÃO 3D PARA AS IMAGENS */
+    .img-container {
+        display: flex;
+        justify-content: center;
+        padding: 10px;
     }
-    img:hover {
-        transform: translateY(-5px);
-        filter: brightness(1.1);
+    
+    /* Estilo da Imagem como Botão (Alto Relevo) */
+    [data-testid="stImage"] img {
+        border-radius: 25px !important;
+        background: #e0e5ec;
+        box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff !important;
+        transition: all 0.3s ease-in-out !important;
+        cursor: pointer;
+        border: 5px solid #e0e5ec !important;
     }
 
-    /* Formulário em Baixo Relevo (Escavado) */
+    /* Efeito de Clique/Hover na Imagem (Baixo Relevo) */
+    [data-testid="stImage"] img:hover {
+        transform: scale(0.98);
+        box-shadow: inset 6px 6px 12px #bebebe, inset -6px -6px 12px #ffffff !important;
+        filter: brightness(1.05);
+    }
+
+    /* Formulário Escavado */
     [data-testid="stForm"] {
         background-color: #e0e5ec !important;
         border-radius: 30px !important;
-        border: none !important;
         padding: 3rem !important;
-        box-shadow: inset 6px 6px 12px #bebebe, inset -6px -6px 12px #ffffff !important;
+        box-shadow: inset 8px 8px 16px #bebebe, inset -8px -8px 16px #ffffff !important;
+        border: none !important;
     }
 
-    /* Inputs (Campos) em Baixo Relevo */
+    /* Inputs Neumórficos */
     .stTextInput div[data-baseweb="input"], .stSelectbox div[data-baseweb="select"], .stTextArea div[data-baseweb="textarea"] {
         background-color: #e0e5ec !important;
-        border-radius: 12px !important;
-        box-shadow: inset 2px 2px 5px #bebebe, inset -5px -5px 10px #ffffff !important;
+        border-radius: 15px !important;
+        box-shadow: inset 3px 3px 6px #bebebe, inset -3px -3px 6px #ffffff !important;
         border: none !important;
     }
 
-    /* Botão em Alto Relevo Forte */
+    /* Botão de Envio 3D */
     div.stButton > button { 
         background-color: #ff0000 !important;
         color: white !important; 
         font-weight: bold !important; 
         height: 55px !important;
         border-radius: 15px !important; 
-        width: 100% !important;
-        border: 1px solid #ff3333 !important;
-        box-shadow: 5px 5px 10px #b8b9be, -5px -5px 10px #ffffff !important;
+        box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff !important;
+        border: none !important;
         transition: 0.2s;
     }
     div.stButton > button:hover {
         box-shadow: 2px 2px 5px #b8b9be, -2px -2px 5px #ffffff !important;
-        transform: scale(0.98); /* Efeito de clique */
+        transform: translateY(2px);
     }
-
-    /* Títulos dos campos */
-    label { color: #444 !important; font-weight: bold !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -114,7 +121,7 @@ def buscar_cursos_dinamicos():
         return mapa_fallback
     except: return mapa_fallback
 
-# --- INTEGRAÇÃO GOOGLE SHEETS ---
+# --- GOOGLE SHEETS ---
 def conectar_google_sheets():
     try:
         s = st.secrets["connections"]["gsheets"]
@@ -155,52 +162,53 @@ def ler_todos_leads():
     except: return pd.DataFrame()
 
 # --- INTERFACE ---
-path_logo = os.path.join("imagens", "logo.png")
-try:
-    if os.path.exists(path_logo):
-        c_logo1, c_logo2, c_logo3 = st.columns([2, 1, 2])
-        with c_logo2: st.image(Image.open(path_logo), width=150)
-except: pass
 
+# 1. Logo (Botão 3D)
+path_logo = os.path.join("imagens", "logo.png")
+if os.path.exists(path_logo):
+    c_logo1, c_logo2, c_logo3 = st.columns([2, 1, 2])
+    with c_logo2: st.image(Image.open(path_logo), width=150)
+
+# Cabeçalho
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse</p></div>', unsafe_allow_html=True)
 
+# 2. Fachada (Botão 3D)
 path_fachada = os.path.join("imagens", "fachada.jpg")
-try:
-    if os.path.exists(path_fachada):
-        c_fac1, c_fac2, c_fac3 = st.columns([1, 6, 1])
-        with c_fac2: st.image(Image.open(path_fachada), use_container_width=True)
-except: pass
+if os.path.exists(path_fachada):
+    c_fac1, c_fac2, c_fac3 = st.columns([1, 6, 1])
+    with c_fac2: st.image(Image.open(path_fachada), use_container_width=True)
 
-with st.spinner("Sincronizando cursos..."):
+with st.spinner("Carregando cursos..."):
     dados_cursos = buscar_cursos_dinamicos()
 
+# Área do Formulário
 col_f1, col_f2, col_f3 = st.columns([1, 2, 1])
 with col_f2:
     st.markdown("<h3 style='text-align: center; color: #333; margin-top: 20px;'>📋 Cadastro de Interesse</h3>", unsafe_allow_html=True)
     
-    area_escolhida = st.selectbox("Selecione a Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
+    area_escolhida = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
     opcoes_cursos = sorted(dados_cursos[area_escolhida]) if area_escolhida != "Selecione..." else []
-    curso_escolhido = st.selectbox("Selecione o Curso:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_escolhida == "Selecione..."))
+    curso_escolhido = st.selectbox("Curso de Interesse:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_escolhida == "Selecione..."))
 
     with st.form("form_interessado", clear_on_submit=True):
         nome = st.text_input("Nome Completo")
         email = st.text_input("E-mail")
         whats = st.text_input("WhatsApp (com DDD)")
-        sugestao = st.text_area("Observações ou curso não listado:")
+        sugestao = st.text_area("Observações:")
         btn_enviar = st.form_submit_button("REGISTRAR AGORA")
 
-    if btn_enviar:
-        if area_escolhida != "Selecione..." and nome and email:
-            data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            if salvar_novo_lead([nome, email, whats, area_escolhida, curso_escolhido, sugestao, data_atual]):
-                st.success(f"Excelente, {nome}! Seu interesse foi registrado.")
-                st.balloons()
-        else: st.error("Por favor, preencha os campos obrigatórios.")
+        if btn_enviar:
+            if area_escolhida != "Selecione..." and nome and email:
+                data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                if salvar_novo_lead([nome, email, whats, area_escolhida, curso_escolhido, sugestao, data_atual]):
+                    st.success(f"Excelente, {nome}! Seu interesse foi registrado.")
+                    st.balloons()
+            else: st.error("Por favor, preencha os campos obrigatórios.")
 
 # --- ADMIN ---
 st.sidebar.markdown("---")
-senha = st.sidebar.text_input("Senha Admin", type="password")
+senha = st.sidebar.text_input("Senha", type="password")
 if senha == "Celina2610$$":
-    if st.sidebar.checkbox("Ver Interessados"):
+    if st.sidebar.checkbox("Ver Leads"):
         df = ler_todos_leads()
         if not df.empty: st.dataframe(df)
