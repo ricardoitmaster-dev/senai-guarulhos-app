@@ -44,7 +44,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- SCRAPING DINÂMICO ---
+# --- SCRAPING DINÂMICO APERFEIÇOADO ---
 @st.cache_data(ttl=43200)
 def buscar_cursos_dinamicos():
     api_key = "3e14f4393c5a034104b37c071a0d021f" 
@@ -57,23 +57,40 @@ def buscar_cursos_dinamicos():
     }
 
     try:
-        params = {'api_key': api_key, 'url': url_alvo, 'render': 'true'}
-        response = requests.get('http://api.scraperapi.com', params=params, timeout=60)
+        # Aumentamos o tempo de espera e garantimos a renderização completa
+        params = {
+            'api_key': api_key, 
+            'url': url_alvo, 
+            'render': 'true',
+            'wait_until': 'networkidle'
+        }
+        response = requests.get('http://api.scraperapi.com', params=params, timeout=90)
         
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
-            cards = soup.find_all(class_='card-curso')
-            if not cards: return mapa_fallback
+            # Seletores mais genéricos para capturar todos os tipos de cursos (Livres, Técnicos, etc)
+            cards = soup.select('div[class*="card-curso"]') or soup.select('.item-lista-curso')
+            
+            if not cards:
+                return mapa_fallback
             
             mapa_real = {}
             for card in cards:
                 try:
-                    area = card.find(class_='area-tematica').get_text(strip=True)
-                    titulo = card.find(class_='titulo-curso').get_text(strip=True)
-                    if area not in mapa_real: mapa_real[area] = []
-                    if titulo not in mapa_real[area]: mapa_real[area].append(titulo)
-                except: continue
-            return mapa_real if mapa_real else mapa_fallback
+                    # Tenta capturar a área e o título por múltiplas classes possíveis
+                    area_elem = card.select_one('.area-tematica, .txt-area, .tag-area')
+                    titulo_elem = card.select_one('.titulo-curso, h2, .nome-curso')
+                    
+                    if area_elem and titulo_elem:
+                        area = area_elem.get_text(strip=True).title()
+                        titulo = titulo_elem.get_text(strip=True).upper()
+                        
+                        if area not in mapa_real: mapa_real[area] = []
+                        if titulo not in mapa_real[area]: mapa_real[area].append(titulo)
+                except:
+                    continue
+            
+            return mapa_real if len(mapa_real) > 0 else mapa_fallback
         return mapa_fallback
     except:
         return mapa_fallback
@@ -101,13 +118,9 @@ def salvar_novo_lead(lista_dados):
         if service is None: return False
         url = st.secrets["connections"]["gsheets"]["spreadsheet"]
         sheet_id = url.split("/d/")[1].split("/")[0]
-        
         service.spreadsheets().values().append(
-            spreadsheetId=sheet_id,
-            range="A1", 
-            valueInputOption="RAW",
-            insertDataOption="INSERT_ROWS",
-            body={"values": [lista_dados]}
+            spreadsheetId=sheet_id, range="A1", valueInputOption="RAW",
+            insertDataOption="INSERT_ROWS", body={"values": [lista_dados]}
         ).execute()
         return True
     except: return False
@@ -122,7 +135,7 @@ def ler_todos_leads():
         return pd.DataFrame(values[1:], columns=values[0]) if values else pd.DataFrame()
     except: return pd.DataFrame()
 
-# --- INTERFACE: LOGO E CABEÇALHO ---
+# --- INTERFACE ---
 path_logo = os.path.join("imagens", "logo.png")
 try:
     if os.path.exists(path_logo):
@@ -132,34 +145,32 @@ except: pass
 
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse</p></div>', unsafe_allow_html=True)
 
-# --- IMAGEM DA FACHADA (REINSERIDA COM TRATAMENTO DE ERRO) ---
 path_fachada = os.path.join("imagens", "fachada.jpg")
 try:
     if os.path.exists(path_fachada):
-        c_fac1, c_fac2, c_fac3 = st.columns([1, 6, 1]) # Coluna central maior para a fachada
-        with c_fac2: 
-            img_fachada = Image.open(path_fachada)
-            st.image(img_fachada, use_container_width=True, caption="SENAI Hermenegildo Parente - Guarulhos")
-except Exception as e:
-    # Se der erro, não exibe nada e não quebra o app
-    pass
+        c_fac1, c_fac2, c_fac3 = st.columns([1, 6, 1])
+        with c_fac2: st.image(Image.open(path_fachada), use_container_width=True, caption="SENAI Hermenegildo Parente - Guarulhos")
+except: pass
 
-with st.spinner("Sincronizando cursos..."):
+with st.spinner("Buscando lista completa de cursos atualizada..."):
     dados_cursos = buscar_cursos_dinamicos()
 
 col_f1, col_f2, col_f3 = st.columns([1, 2, 1])
 with col_f2:
     st.markdown("<h3 style='text-align: center;'>📋 Formulário de Inscrição</h3>", unsafe_allow_html=True)
     
-    area_escolhida = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
+    # Ordenação alfabética das áreas para facilitar a busca do aluno
+    areas_disponiveis = sorted(list(dados_cursos.keys()))
+    area_escolhida = st.selectbox("Selecione a Área Profissional:", ["Selecione..."] + areas_disponiveis)
+    
     opcoes_cursos = sorted(dados_cursos[area_escolhida]) if area_escolhida != "Selecione..." else []
-    curso_escolhido = st.selectbox("Curso de Interesse:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_escolhida == "Selecione..."))
+    curso_escolhido = st.selectbox("Selecione o Curso de Interesse:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_escolhida == "Selecione..."))
 
     with st.form("form_interessado", clear_on_submit=True):
         nome = st.text_input("Nome Completo")
         email = st.text_input("E-mail")
-        whats = st.text_input("WhatsApp")
-        sugestao = st.text_area("Sugestão de outro curso ou comentário:")
+        whats = st.text_input("WhatsApp (com DDD)")
+        sugestao = st.text_area("Não encontrou seu curso? Sugira aqui:")
         btn_enviar = st.form_submit_button("REGISTRAR INTERESSE")
 
     if btn_enviar:
@@ -168,18 +179,18 @@ with col_f2:
             if salvar_novo_lead([nome, email, whats, area_escolhida, curso_escolhido, sugestao, data_atual]):
                 st.markdown(f"""
                     <div class="sucesso-msg">
-                        <h3>Obrigado, {nome}!</h3>
+                        <h3>Tudo pronto, {nome}!</h3>
                         <p>Seu interesse no curso <b>{curso_escolhido}</b> foi registrado com sucesso.</p>
-                        <p>Assim que este curso for aberto, entraremos em contato imediatamente!</p>
+                        <p>Assim que este curso for aberto na Unidade 122, entraremos em contato!</p>
                     </div>
                 """, unsafe_allow_html=True)
                 st.balloons()
-        else: st.warning("Por favor, preencha o nome, e-mail e selecione a área de interesse.")
+        else: st.warning("Por favor, preencha os campos obrigatórios (Área, Nome e E-mail).")
 
-# --- ADMINISTRAÇÃO ---
+# --- ADMIN ---
 st.sidebar.markdown("## 🔒 Admin")
 senha = st.sidebar.text_input("Senha", type="password")
 if senha == "Celina2610$$":
-    if st.sidebar.checkbox("Ver Leads"):
+    if st.sidebar.checkbox("Visualizar Leads"):
         df = ler_todos_leads()
         if not df.empty: st.dataframe(df)
