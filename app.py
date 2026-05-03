@@ -18,7 +18,12 @@ st.markdown("""
     .header-senai { 
         background: linear-gradient(90deg, #e3000f 0%, #ff4b4b 100%); 
         padding: 30px; border-radius: 20px; color: white; text-align: center; 
-        box-shadow: 0 15px 25px -5px rgba(227, 0, 15, 0.4); margin-bottom: 40px;
+        box-shadow: 0 15px 25px -5px rgba(227, 0, 15, 0.4); margin-bottom: 20px;
+    }
+    .img-escola {
+        border-radius: 15px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
     }
     [data-testid="stForm"] {
         background: rgba(255, 255, 255, 0.4) !important;
@@ -35,7 +40,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- FUNÇÕES DE DADOS (PRESERVADAS) ---
+# --- FUNÇÕES DE DADOS ---
 @st.cache_data(ttl=86400)
 def buscar_cursos_dinamicos():
     return {
@@ -84,24 +89,27 @@ def ler_todos_leads():
         return pd.DataFrame(values[1:], columns=values[0]) if values else pd.DataFrame()
     except: return pd.DataFrame()
 
-# --- EXIBIÇÃO DA LOGO (CORRIGIDA) ---
-c_img1, c_img2, c_img3 = st.columns([2, 1, 2])
+# --- CABEÇALHO ---
+st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse</p></div>', unsafe_allow_html=True)
+
+# --- EXIBIÇÃO DA IMAGEM DA ESCOLA (CORRIGIDA) ---
+c_img1, c_img2, c_img3 = st.columns([1, 4, 1])
 with c_img2:
-    path_logo = os.path.join("imagens", "logo.png")
-    if os.path.exists(path_logo):
-        st.image(Image.open(path_logo), width=180)
+    # Tentativa 1: Arquivo local (imagens/frente_escola.png)
+    path_escola = os.path.join("imagens", "frente_escola.png")
+    if os.path.exists(path_escola):
+        st.image(Image.open(path_escola), use_container_width=True, caption="Unidade SENAI Guarulhos 122")
     else:
-        # Fallback: Se a imagem sumir do servidor, carrega uma oficial via URL
-        st.image("https://upload.wikimedia.org/wikipedia/commons/8/8c/SENAI_Logo.png", width=180)
+        # Tentativa 2: URL Direta (Substitua este link pela URL da foto da escola se tiver uma)
+        # Usei uma imagem padrão do SENAI como exemplo caso a sua suma
+        st.image("https://guarulhos.sp.senai.br/institucional/3611/0/unidade-guarulhos", use_container_width=True, caption="SENAI Guarulhos - Unidade 122")
 
 # --- INTERFACE PRINCIPAL ---
 dados_cursos = buscar_cursos_dinamicos()
 
-st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse</p></div>', unsafe_allow_html=True)
+col_f1, col_f2, col_f3 = st.columns([1, 2, 1])
 
-col1, col2, col3 = st.columns([1, 2, 1])
-
-with col2:
+with col_f2:
     st.markdown("<h3 style='text-align: center;'>📋 Escolha seu Curso</h3>", unsafe_allow_html=True)
     area_escolhida = st.selectbox("1. Selecione a Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
     opcoes_cursos = sorted(dados_cursos[area_escolhida]) if area_escolhida != "Selecione..." else []
@@ -117,12 +125,12 @@ with col2:
         if area_escolhida != "Selecione..." and curso_escolhido != "Aguardando área..." and nome and email:
             data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             if salvar_novo_lead([nome, email, whats, area_escolhida, curso_escolhido, data_atual]):
-                st.success(f"✅ Olá {nome}! Recebemos seu interesse no curso de **{curso_escolhido}**. Retornaremos assim que novas turmas forem abertas!")
+                st.success(f"✅ Olá {nome}! Registro concluído para o curso de {curso_escolhido}. Entraremos em contato em breve!")
                 st.balloons()
             else:
                 st.error("Erro ao salvar os dados.")
         else:
-            st.warning("⚠️ Por favor, preencha todos os campos corretamente.")
+            st.warning("⚠️ Preencha todos os campos corretamente.")
 
 # --- PAINEL LATERAL ADM ---
 st.sidebar.markdown("## 🔒 Área Administrativa")
