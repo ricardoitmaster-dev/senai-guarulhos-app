@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
+import requests
+from bs4 import BeautifulSoup
 from PIL import Image
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -9,149 +11,131 @@ from googleapiclient.discovery import build
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- BLOCO: CONEXÃO GOOGLE SHEETS ---
+# --- CSS: ESTILO VITRIFICADO PROFISSIONAL ---
+st.markdown("""
+    <style>
+    .stApp { background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%); }
+    .header-senai { 
+        background: linear-gradient(90deg, #e3000f 0%, #ff4b4b 100%); 
+        padding: 30px; border-radius: 20px; color: white; text-align: center; 
+        box-shadow: 0 15px 25px -5px rgba(227, 0, 15, 0.4); margin-bottom: 40px;
+    }
+    [data-testid="stForm"] {
+        background: rgba(255, 255, 255, 0.4) !important;
+        backdrop-filter: blur(15px) saturate(180%) !important;
+        border-radius: 25px !important;
+        border: 1px solid rgba(255, 255, 255, 0.5) !important;
+        padding: 3rem !important;
+    }
+    div.stButton > button { 
+        background: linear-gradient(90deg, #232526 0%, #414345 100%) !important;
+        color: white !important; font-weight: 700 !important; height: 60px !important;
+        border-radius: 15px !important; width: 100% !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- BANCO DE DADOS DE CURSOS (DINÂMICO) ---
+@st.cache_data(ttl=86400)
+def buscar_cursos_dinamicos():
+    mapa = {
+        "Tecnologia da Informação": ["Excel Avançado", "IA Generativa", "Python", "Power BI", "Desenvolvimento de Sistemas"],
+        "Eletroeletrônica": ["Eletricista Instalador", "Comandos Elétricos", "CLP", "Manutenção Eletrônica"],
+        "Metalmecânica": ["Mecânico de Usinagem", "Soldagem MAG/TIG", "Operador de CNC", "Mecânico de Manutenção"],
+        "Gestão e Logística": ["Almoxarife", "Assistente Administrativo", "Assistente de RH", "Logística"]
+    }
+    return mapa
+
+# --- CONEXÃO GOOGLE SHEETS ---
 @st.cache_resource
 def conectar_google_sheets():
     try:
         s = st.secrets["connections"]["gsheets"]
-        pk = s["private_key"].replace("\\n", "\n").strip()
         info = {
             "type": "service_account", "project_id": s["project_id"],
-            "private_key_id": s["private_key_id"], "private_key": pk,
+            "private_key_id": s["private_key_id"],
+            "private_key": s["private_key"].replace("\\n", "\n").strip(),
             "client_email": s["client_email"], "client_id": s["client_id"],
             "auth_uri": s["auth_uri"], "token_uri": s["token_uri"],
             "auth_provider_x509_cert_url": s["auth_provider_x509_cert_url"],
             "client_x509_cert_url": s["client_x509_cert_url"]
         }
-        scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-        creds = service_account.Credentials.from_service_account_info(info, scopes=scopes)
+        creds = service_account.Credentials.from_service_account_info(info, scopes=["https://www.googleapis.com/auth/spreadsheets"])
         return build("sheets", "v4", credentials=creds)
-    except Exception as e:
-        st.error(f"Erro de Conexão: {e}")
-        return None
+    except: return None
 
-service = conectar_google_sheets()
-
-def extrair_id_planilha(url):
-    return url.split("/d/")[1].split("/")[0]
-
-def ler_dados():
+def salvar_novo_lead(lista_dados):
     try:
+        service = conectar_google_sheets()
         url = st.secrets["connections"]["gsheets"]["spreadsheet"]
-        sheet_id = extrair_id_planilha(url)
-        result = service.spreadsheets().values().get(spreadsheetId=sheet_id, range="A1:Z1000").execute()
-        values = result.get("values", [])
-        if not values: 
-            return pd.DataFrame(columns=["nome", "email", "whatsapp", "area", "curso", "sugestao", "data"])
-        return pd.DataFrame(values[1:], columns=values[0])
-    except: 
-        return pd.DataFrame(columns=["nome", "email", "whatsapp", "area", "curso", "sugestao", "data"])
-
-def salvar_dados(df):
-    try:
-        url = st.secrets["connections"]["gsheets"]["spreadsheet"]
-        sheet_id = extrair_id_planilha(url)
-        
-        # CORREÇÃO: Limpa valores nulos (NaN) para evitar o erro 400 no JSON
-        df = df.fillna("") 
-        
-        valores = [df.columns.values.tolist()] + df.values.tolist()
-        body = {"values": valores}
-        
-        service.spreadsheets().values().update(
-            spreadsheetId=sheet_id, 
-            range="A1", 
-            valueInputOption="RAW", 
-            body=body
+        sheet_id = url.split("/d/")[1].split("/")[0]
+        service.spreadsheets().values().append(
+            spreadsheetId=sheet_id, range="A2", valueInputOption="RAW", 
+            body={"values": [lista_dados]}
         ).execute()
         return True
-    except Exception as e:
-        st.error(f"Erro ao salvar: {e}")
-        return False
+    except: return False
 
-# --- PAINEL ADMINISTRATIVO (BARRA LATERAL) ---
-with st.sidebar:
-    st.header("🔐 Painel Adm")
-    senha = st.text_input("Senha de acesso:", type="password")
-    
-    if senha == "senai122":
-        st.success("Acesso Autorizado")
-        if st.button("📊 Ver Lista de Interessados"):
-            df_leads = ler_dados()
-            st.write("### Candidatos Registrados")
-            st.dataframe(df_leads)
-            
-            csv = df_leads.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 Baixar Planilha (CSV)", data=csv, file_name="interessados_senai.csv", mime="text/csv")
+def ler_todos_leads():
+    try:
+        service = conectar_google_sheets()
+        url = st.secrets["connections"]["gsheets"]["spreadsheet"]
+        sheet_id = url.split("/d/")[1].split("/")[0]
+        result = service.spreadsheets().values().get(spreadsheetId=sheet_id, range="A1:Z2000").execute()
+        values = result.get("values", [])
+        return pd.DataFrame(values[1:], columns=values[0]) if values else pd.DataFrame()
+    except: return pd.DataFrame()
 
-# --- MAPEAMENTO DE CURSOS ---
-dados_cursos = {
-    "Administração e Gestão": ["Almoxarife", "Assistente Administrativo", "Assistente de RH", "Logística"],
-    "Eletroeletrônica": ["Eletricista Instalador", "Comandos Elétricos", "CLP"],
-    "Metalmecânica": ["Mecânico de Usinagem", "Soldador", "Programador e Operador de CNC"],
-    "Tecnologia da Informação": ["Excel Avançado", "IA Generativa", "Power BI", "Técnico em Desenvolvimento de Sistemas"],
-    "Automobilística": ["Mecânico de Automóveis", "Eletricista Veicular"]
-}
-
-# --- ESTILO E IMAGENS ---
-st.markdown('<style>.header-senai { background-color: #ff0000; padding: 15px; border-radius: 12px; color: white; text-align: center; }</style>', unsafe_allow_html=True)
+# --- INTERFACE PRINCIPAL ---
+dados_cursos = buscar_cursos_dinamicos()
 
 path_logo = os.path.join("imagens", "logo.png")
 if os.path.exists(path_logo):
-    c1, c2, c3 = st.columns([2, 1, 2])
-    with c2: st.image(Image.open(path_logo), width=150)
+    c_img1, c_img2, c_img3 = st.columns([2, 1, 2])
+    with c_img2: st.image(Image.open(path_logo), width=160)
 
-st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Hermenegildo Campos de Almeida</p></div>', unsafe_allow_html=True)
+st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse</p></div>', unsafe_allow_html=True)
 
-path_fachada = os.path.join("imagens", "fachada.jpg")
-if os.path.exists(path_fachada):
-    st.write("")
-    f1, f2, f3 = st.columns([1, 6, 1])
-    with f2: st.image(Image.open(path_fachada), use_container_width=True)
-
-st.write("---")
-
-# --- INTERFACE DO FORMULÁRIO ---
 col1, col2, col3 = st.columns([1, 2, 1])
+
 with col2:
-    st.write("### 📋 Ficha de Interesse")
-    area_sel = st.selectbox("1. Selecione a Área:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
+    st.markdown("<h3 style='text-align: center;'>📋 Escolha seu Curso</h3>", unsafe_allow_html=True)
     
-    lista_cursos = ["Selecione a área"]
-    if area_sel != "Selecione...":
-        lista_cursos = ["Selecione..."] + sorted(dados_cursos[area_sel])
-        
-    curso_sel = st.selectbox("2. Selecione o Curso:", lista_cursos)
+    area_escolhida = st.selectbox("1. Selecione a Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
+    
+    opcoes_cursos = sorted(dados_cursos[area_escolhida]) if area_escolhida != "Selecione..." else []
+    curso_escolhido = st.selectbox("2. Selecione o Curso:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_escolhida == "Selecione..."))
 
-    with st.form("form_registro", clear_on_submit=True):
+    with st.form("form_interessado", clear_on_submit=True):
         nome = st.text_input("Nome Completo")
-        email = st.text_input("E-mail")
-        whats = st.text_input("WhatsApp")
-        sugestao = st.text_area("Sugestões ou dúvidas")
-        submit_btn = st.form_submit_button("REGISTRAR INTERESSE")
+        email = st.text_input("Seu E-mail")
+        whats = st.text_input("Seu WhatsApp")
+        
+        btn_enviar = st.form_submit_button("REGISTRAR MEU INTERESSE")
 
-    # Lógica de processamento
-    if submit_btn:
-        if nome and email and area_sel != "Selecione..." and curso_sel != "Selecione...":
-            if service:
-                df_atual = ler_dados()
-                novo_registro = {
-                    "nome": nome, 
-                    "email": email, 
-                    "whatsapp": whats, 
-                    "area": area_sel, 
-                    "curso": curso_sel, 
-                    "sugestao": sugestao, 
-                    "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                }
-                # Concatena o novo registro ao DataFrame atual
-                df_final = pd.concat([df_atual, pd.DataFrame([novo_registro])], ignore_index=True)
-                
-                if salvar_dados(df_final):
-                    st.success(f"### ✅ Sucesso, {nome}!")
-                    st.info("Seu interesse foi registrado com sucesso na Unidade 122.")
-                    st.balloons()
+    if btn_enviar:
+        if area_escolhida != "Selecione..." and curso_escolhido != "Aguardando área..." and nome and email:
+            data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            if salvar_novo_lead([nome, email, whats, area_escolhida, curso_escolhido, data_atual]):
+                st.success(f"✅ Olá {nome}! Recebemos seu interesse no curso de **{curso_escolhido}**. Assim que novas turmas forem abertas, nossa equipe entrará em contato com você!")
+                st.balloons()
             else:
-                st.error("Erro na conexão com o banco de dados. Verifique os Secrets.")
+                st.error("Erro ao salvar os dados.")
         else:
-            st.warning("Por favor, preencha todos os campos obrigatórios (Nome, E-mail e Curso).")
+            st.warning("⚠️ Por favor, preencha todos os campos corretamente.")
+
+# --- PAINEL LATERAL ADM (SENHA ATUALIZADA) ---
+st.sidebar.markdown("## 🔒 Área Administrativa")
+# A senha foi alterada conforme solicitado para Celina2610$$
+senha = st.sidebar.text_input("Senha", type="password")
+
+if senha == "Celina2610$$":
+    st.sidebar.success("Acesso Liberado")
+    if st.sidebar.checkbox("Visualizar Interessados"):
+        df_leads = ler_todos_leads()
+        if not df_leads.empty:
+            st.write("### Relatório de Leads")
+            st.dataframe(df_leads)
+            
+            csv = df_leads.to_csv(index=False).encode('utf-8-sig')
+            st.sidebar.download_button("📥 Baixar CSV", csv, "leads_senai.csv", "text/csv")
