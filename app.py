@@ -11,7 +11,7 @@ from googleapiclient.discovery import build
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- CSS: ESTILO VITRIFICADO PROFISSIONAL ---
+# --- CSS: ESTILO VITRIFICADO ---
 st.markdown("""
     <style>
     .stApp { background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%); }
@@ -35,18 +35,16 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- BANCO DE DADOS DE CURSOS (DINÂMICO) ---
+# --- FUNÇÕES DE DADOS (PRESERVADAS) ---
 @st.cache_data(ttl=86400)
 def buscar_cursos_dinamicos():
-    mapa = {
+    return {
         "Tecnologia da Informação": ["Excel Avançado", "IA Generativa", "Python", "Power BI", "Desenvolvimento de Sistemas"],
         "Eletroeletrônica": ["Eletricista Instalador", "Comandos Elétricos", "CLP", "Manutenção Eletrônica"],
         "Metalmecânica": ["Mecânico de Usinagem", "Soldagem MAG/TIG", "Operador de CNC", "Mecânico de Manutenção"],
         "Gestão e Logística": ["Almoxarife", "Assistente Administrativo", "Assistente de RH", "Logística"]
     }
-    return mapa
 
-# --- CONEXÃO GOOGLE SHEETS ---
 @st.cache_resource
 def conectar_google_sheets():
     try:
@@ -86,13 +84,18 @@ def ler_todos_leads():
         return pd.DataFrame(values[1:], columns=values[0]) if values else pd.DataFrame()
     except: return pd.DataFrame()
 
+# --- EXIBIÇÃO DA LOGO (CORRIGIDA) ---
+c_img1, c_img2, c_img3 = st.columns([2, 1, 2])
+with c_img2:
+    path_logo = os.path.join("imagens", "logo.png")
+    if os.path.exists(path_logo):
+        st.image(Image.open(path_logo), width=180)
+    else:
+        # Fallback: Se a imagem sumir do servidor, carrega uma oficial via URL
+        st.image("https://upload.wikimedia.org/wikipedia/commons/8/8c/SENAI_Logo.png", width=180)
+
 # --- INTERFACE PRINCIPAL ---
 dados_cursos = buscar_cursos_dinamicos()
-
-path_logo = os.path.join("imagens", "logo.png")
-if os.path.exists(path_logo):
-    c_img1, c_img2, c_img3 = st.columns([2, 1, 2])
-    with c_img2: st.image(Image.open(path_logo), width=160)
 
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse</p></div>', unsafe_allow_html=True)
 
@@ -100,9 +103,7 @@ col1, col2, col3 = st.columns([1, 2, 1])
 
 with col2:
     st.markdown("<h3 style='text-align: center;'>📋 Escolha seu Curso</h3>", unsafe_allow_html=True)
-    
     area_escolhida = st.selectbox("1. Selecione a Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
-    
     opcoes_cursos = sorted(dados_cursos[area_escolhida]) if area_escolhida != "Selecione..." else []
     curso_escolhido = st.selectbox("2. Selecione o Curso:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_escolhida == "Selecione..."))
 
@@ -110,23 +111,21 @@ with col2:
         nome = st.text_input("Nome Completo")
         email = st.text_input("Seu E-mail")
         whats = st.text_input("Seu WhatsApp")
-        
         btn_enviar = st.form_submit_button("REGISTRAR MEU INTERESSE")
 
     if btn_enviar:
         if area_escolhida != "Selecione..." and curso_escolhido != "Aguardando área..." and nome and email:
             data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             if salvar_novo_lead([nome, email, whats, area_escolhida, curso_escolhido, data_atual]):
-                st.success(f"✅ Olá {nome}! Recebemos seu interesse no curso de **{curso_escolhido}**. Assim que novas turmas forem abertas, nossa equipe entrará em contato com você!")
+                st.success(f"✅ Olá {nome}! Recebemos seu interesse no curso de **{curso_escolhido}**. Retornaremos assim que novas turmas forem abertas!")
                 st.balloons()
             else:
                 st.error("Erro ao salvar os dados.")
         else:
             st.warning("⚠️ Por favor, preencha todos os campos corretamente.")
 
-# --- PAINEL LATERAL ADM (SENHA ATUALIZADA) ---
+# --- PAINEL LATERAL ADM ---
 st.sidebar.markdown("## 🔒 Área Administrativa")
-# A senha foi alterada conforme solicitado para Celina2610$$
 senha = st.sidebar.text_input("Senha", type="password")
 
 if senha == "Celina2610$$":
@@ -136,6 +135,5 @@ if senha == "Celina2610$$":
         if not df_leads.empty:
             st.write("### Relatório de Leads")
             st.dataframe(df_leads)
-            
             csv = df_leads.to_csv(index=False).encode('utf-8-sig')
             st.sidebar.download_button("📥 Baixar CSV", csv, "leads_senai.csv", "text/csv")
