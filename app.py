@@ -18,7 +18,7 @@ def get_base64_of_bin_file(bin_file):
         data = f.read()
     return base64.b64encode(data).decode()
 
-# --- CSS: ESTILO 3D, FAIXA TOTAL E CORREÇÃO DE CORES ---
+# --- CSS: ESTILO 3D, FAIXA TOTAL E CORREÇÃO DE CORES MOBILE ---
 st.markdown("""
     <style>
     /* Fundo Neumórfico */
@@ -56,14 +56,37 @@ st.markdown("""
         margin: 0; 
         text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         font-weight: 800;
+        color: white !important;
     }
-    .header-senai p { font-size: 16px !important; margin: 5px 0 0 0; opacity: 0.9; }
+    .header-senai p { font-size: 16px !important; margin: 5px 0 0 0; opacity: 0.9; color: white !important; }
 
     /* CORREÇÃO PARA SMARTPHONES: Labels em PRETO */
-    /* Força a cor preta em todos os textos de instrução do formulário */
-    label, p, .stMarkdown, [data-testid="stWidgetLabel"] p {
+    label, [data-testid="stWidgetLabel"] p {
         color: #000000 !important;
         font-weight: 600 !important;
+    }
+
+    /* CORREÇÃO CRÍTICA DO BOTÃO PARA CELULAR */
+    div.stButton > button { 
+        background-color: #ff0000 !important;
+        color: #ffffff !important; 
+        font-weight: bold !important; 
+        height: 55px !important;
+        border-radius: 15px !important; 
+        width: 100% !important;
+        border: none !important;
+        box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff !important;
+        /* Impede que o sistema mobile altere a cor no clique */
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    div.stButton > button p {
+        color: #ffffff !important; /* Força o texto dentro do botão a ser branco */
+    }
+
+    div.stButton > button:hover, div.stButton > button:active, div.stButton > button:focus {
+        background-color: #cc0000 !important;
+        color: #ffffff !important;
     }
 
     /* Efeito de Botão 3D nas Imagens */
@@ -83,10 +106,6 @@ st.markdown("""
         border: 4px solid #e0e5ec;
     }
     .img-3d-link:hover { transform: scale(0.98); }
-    .img-3d-link:hover img {
-        box-shadow: inset 6px 6px 12px #bebebe, inset -6px -6px 12px #ffffff;
-        filter: brightness(1.1);
-    }
 
     /* Formulário Escavado */
     [data-testid="stForm"] {
@@ -102,17 +121,6 @@ st.markdown("""
         background-color: #e0e5ec !important;
         border-radius: 15px !important;
         box-shadow: inset 3px 3px 6px #bebebe, inset -3px -3px 6px #ffffff !important;
-        border: none !important;
-    }
-
-    /* Botão Enviar 3D */
-    div.stButton > button { 
-        background-color: #ff0000 !important;
-        color: white !important; 
-        font-weight: bold !important; 
-        height: 50px !important;
-        border-radius: 15px !important; 
-        box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff !important;
         border: none !important;
     }
     </style>
@@ -233,7 +241,7 @@ with st.spinner("Sincronizando cursos..."):
 # Formulário
 col_main1, col_main2, col_main3 = st.columns([1, 2, 1])
 with col_main2:
-    st.markdown("<h3 style='text-align: center; margin-top: 20px;'>📋 Cadastro de Interesse</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; margin-top: 20px; color: #000000;'>📋 Cadastro de Interesse</h3>", unsafe_allow_html=True)
     
     area_sel = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
     opcoes = sorted(dados_cursos[area_sel]) if area_sel != "Selecione..." else []
@@ -250,7 +258,6 @@ with col_main2:
             if area_sel != "Selecione..." and nome and email:
                 data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 if salvar_novo_lead([nome, email, whats, area_sel, curso_sel, obs, data_atual]):
-                    # MENSAGEM FINAL RESTAURADA
                     st.success(f"Excelente, {nome}! Registramos seu interesse. Entraremos em contato assim que as inscrições para o curso estiverem abertas.")
                     st.balloons()
             else: st.error("Por favor, preencha os campos obrigatórios.")
