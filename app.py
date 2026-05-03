@@ -2,19 +2,11 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
-import subprocess
+import requests
+from bs4 import BeautifulSoup
 from PIL import Image
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-
-# Comando para instalar o navegador do Playwright se ele não existir
-try:
-    import playwright
-except ImportError:
-    subprocess.run(["pip", "install", "playwright"])
-    subprocess.run(["playwright", "install", "chromium"])
-
-from playwright.sync_api import sync_playwright
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
@@ -43,38 +35,47 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- FUNÇÃO DE SCRAPING COM PLAYWRIGHT ---
-@st.cache_data(ttl=43200)
+# --- FUNÇÃO DE SCRAPING VIA SCRAPERAPI ---
+@st.cache_data(ttl=43200) # Atualiza a cada 12 horas
 def buscar_cursos_dinamicos():
+    # --- INSIRA SUA CHAVE ABAIXO ---
+    api_key = "3e14f4393c5a034104b37c071a0d021f" 
+    url_alvo = "https://www.sp.senai.br/cursos?unidade=122"
+    
     mapa_fallback = {
         "Tecnologia da Informação": ["Excel Avançado", "IA Generativa", "Python", "Power BI"],
         "Eletroeletrônica": ["Eletricista Instalador", "Comandos Elétricos"],
         "Gestão e Logística": ["Almoxarife", "Assistente Administrativo"]
     }
-    
+
     try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page()
-            page.goto("https://www.sp.senai.br/cursos?unidade=122", wait_until="networkidle")
+        # Solicitamos à API para renderizar o JS do SENAI
+        params = {'api_key': api_key, 'url': url_alvo, 'render': 'true'}
+        response = requests.get('http://api.scraperapi.com', params=params, timeout=60)
+        
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            # O seletor abaixo busca os cards de curso no site do SENAI
+            cards = soup.find_all(class_='card-curso')
             
-            # Aguarda os elementos de curso aparecerem
-            page.wait_for_selector(".card-curso", timeout=15000)
+            if not cards: return mapa_fallback
             
-            cursos_elements = page.query_selector_all(".card-curso")
             mapa_real = {}
-            
-            for el in cursos_elements:
+            for card in cards:
                 try:
-                    area = el.query_selector(".area-tematica").inner_text().strip()
-                    curso = el.query_selector(".titulo-curso").inner_text().strip()
+                    area_elem = card.find(class_='area-tematica')
+                    titulo_elem = card.find(class_='titulo-curso')
                     
-                    if area not in mapa_real: mapa_real[area] = []
-                    if curso not in mapa_real[area]: mapa_real[area].append(curso)
+                    if area_elem and titulo_elem:
+                        area = area_elem.get_text(strip=True)
+                        titulo = titulo_elem.get_text(strip=True)
+                        
+                        if area not in mapa_real: mapa_real[area] = []
+                        if titulo not in mapa_real[area]: mapa_real[area].append(titulo)
                 except: continue
                 
-            browser.close()
             return mapa_real if mapa_real else mapa_fallback
+        return mapa_fallback
     except:
         return mapa_fallback
 
@@ -132,7 +133,7 @@ if os.path.exists(path_fachada):
     with c_fac2: st.image(Image.open(path_fachada), use_container_width=True)
 
 # --- CARREGAMENTO DOS CURSOS ---
-with st.spinner("Sincronizando cursos em tempo real..."):
+with st.spinner("Sincronizando com o site do SENAI..."):
     dados_cursos = buscar_cursos_dinamicos()
 
 col_f1, col_f2, col_f3 = st.columns([1, 2, 1])
@@ -152,12 +153,12 @@ with col_f2:
         if area_escolhida != "Selecione..." and curso_escolhido != "Aguardando área..." and nome and email:
             data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             if salvar_novo_lead([nome, email, whats, area_escolhida, curso_escolhido, data_atual]):
-                st.success(f"✅ Olá {nome}! Registro concluído com sucesso!")
+                st.success(f"✅ Olá {nome}! Seu interesse foi registrado. Entraremos em contato em breve!")
                 st.balloons()
-            else: st.error("Erro ao salvar os dados.")
-        else: st.warning("⚠️ Preencha todos os campos corretamente.")
+            else: st.error("Erro ao salvar no Google Sheets.")
+        else: st.warning("⚠️ Por favor, preencha todos os campos.")
 
-# --- ADM ---
+# --- PAINEL ADM ---
 st.sidebar.markdown("## 🔒 Área Administrativa")
 senha = st.sidebar.text_input("Senha", type="password")
 if senha == "Celina2610$$":
