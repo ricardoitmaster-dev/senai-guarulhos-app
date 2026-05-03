@@ -1,5 +1,5 @@
 import streamlit as st
-import pandas as pd  # <--- Corrigido aqui
+import pandas as pd
 from datetime import datetime
 import os
 import requests
@@ -18,13 +18,11 @@ def get_base64_of_bin_file(bin_file):
         data = f.read()
     return base64.b64encode(data).decode()
 
-# --- CSS: ESTILO 3D, FAIXA TOTAL E CORREÇÃO DE CORES MOBILE ---
+# --- CSS: FOCO TOTAL NA LEGIBILIDADE MOBILE ---
 st.markdown("""
     <style>
-    /* Fundo Neumórfico */
     .stApp { background-color: #e0e5ec; }
     
-    /* Container do Logo acima da faixa */
     .logo-container {
         position: relative;
         z-index: 10;
@@ -34,7 +32,6 @@ st.markdown("""
         padding-top: 10px;
     }
 
-    /* FAIXA VERMELHA LARGURA TOTAL */
     .header-senai { 
         background: #ff0000; 
         padding: 40px 0px 25px 0px; 
@@ -51,34 +48,22 @@ st.markdown("""
         border-bottom: 4px solid #cc0000;
     }
     
-    .header-senai h1 { 
-        font-size: 28px !important; 
-        margin: 0; 
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        font-weight: 800;
-        color: white !important;
-    }
-    .header-senai p { font-size: 16px !important; margin: 5px 0 0 0; opacity: 0.9; color: white !important; }
+    .header-senai h1 { font-size: 28px !important; margin: 0; font-weight: 800; color: white !important; }
+    .header-senai p { font-size: 16px !important; margin: 5px 0 0 0; color: white !important; }
 
-    /* CORREÇÃO PARA SMARTPHONES: Labels em PRETO */
-    label, [data-testid="stWidgetLabel"] p {
-        color: #000000 !important;
-        font-weight: 600 !important;
-    }
-
-    /* FORÇAR COR ESCURA NA MENSAGEM DE SUCESSO (BOX VERDE) */
-    /* Resolvendo o problema da imagem WhatsApp Image 2026-05-03 at 15.45.19.jpeg */
+    /* SOLUÇÃO DEFINITIVA PARA A MENSAGEM DE SUCESSO (IMAGEM WHATSAPP) */
     div[data-testid="stNotification"] {
-        background-color: #d4edda !important; 
-        border: 2px solid #155724 !important;
+        background-color: #ffffff !important; /* Fundo Branco Puro */
+        border: 3px solid #ff0000 !important; /* Borda Vermelha para destaque */
+        border-radius: 15px !important;
     }
     div[data-testid="stNotification"] div {
-        color: #155724 !important; 
-        font-weight: 700 !important;
-        font-size: 16px !important;
+        color: #000000 !important; /* TEXTO PRETO ABSOLUTO */
+        font-weight: 800 !important;
+        font-size: 18px !important;
     }
 
-    /* CORREÇÃO DO BOTÃO PARA CELULAR */
+    /* BOTÃO REGISTRAR */
     div.stButton > button { 
         background-color: #ff0000 !important;
         color: #ffffff !important; 
@@ -88,31 +73,16 @@ st.markdown("""
         width: 100% !important;
         border: none !important;
         box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff !important;
-        -webkit-tap-highlight-color: transparent;
     }
     
-    div.stButton > button p {
-        color: #ffffff !important;
+    div.stButton > button p { color: #ffffff !important; }
+
+    /* Estilo dos Labels */
+    label, [data-testid="stWidgetLabel"] p {
+        color: #000000 !important;
+        font-weight: 700 !important;
     }
 
-    /* Efeito de Botão 3D nas Imagens */
-    .img-3d-link {
-        display: block;
-        margin: auto;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        border-radius: 25px;
-        overflow: hidden;
-        width: fit-content;
-    }
-    .img-3d-link img {
-        border-radius: 25px;
-        box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff;
-        transition: all 0.3s ease;
-        border: 4px solid #e0e5ec;
-    }
-
-    /* Formulário Escavado */
     [data-testid="stForm"] {
         background-color: #e0e5ec !important;
         border-radius: 30px !important;
@@ -120,23 +90,15 @@ st.markdown("""
         box-shadow: inset 8px 8px 16px #bebebe, inset -8px -8px 16px #ffffff !important;
         border: none !important;
     }
-
-    /* Inputs Neumórficos */
-    .stTextInput div[data-baseweb="input"], .stSelectbox div[data-baseweb="select"], .stTextArea div[data-baseweb="textarea"] {
-        background-color: #e0e5ec !important;
-        border-radius: 15px !important;
-        box-shadow: inset 3px 3px 6px #bebebe, inset -3px -3px 6px #ffffff !important;
-        border: none !important;
-    }
     </style>
     """, unsafe_allow_html=True)
 
-# --- CONFIGURAÇÕES ---
+# --- CONFIGURAÇÕES DE CAMINHO ---
 url_senai = "https://www.sp.senai.br/cursos?unidade=122"
 path_logo = os.path.join("imagens", "logo.png")
 path_fachada = os.path.join("imagens", "fachada.jpg")
 
-# --- SCRAPING DINÂMICO ---
+# --- SCRAPING ---
 @st.cache_data(ttl=43200)
 def buscar_cursos_dinamicos():
     api_key = "3e14f4393c5a034104b37c071a0d021f" 
@@ -210,49 +172,30 @@ def ler_todos_leads():
 
 # --- INTERFACE ---
 
-# 1. Logo
+# Logo
 if os.path.exists(path_logo):
     logo_base64 = get_base64_of_bin_file(path_logo)
-    st.markdown(f'''
-        <div class="logo-container">
-            <a href="{url_senai}" target="_blank" class="img-3d-link">
-                <img src="data:image/png;base64,{logo_base64}" width="150">
-            </a>
-        </div>
-    ''', unsafe_allow_html=True)
+    st.markdown(f'''<div class="logo-container"><img src="data:image/png;base64,{logo_base64}" width="150"></div>''', unsafe_allow_html=True)
 
 # Faixa Vermelha
-st.markdown(f'''
-    <div class="header-senai">
-        <h1>SENAI GUARULHOS</h1>
-        <p>Unidade 122 - Registro de Interesse Profissional</p>
-    </div>
-''', unsafe_allow_html=True)
+st.markdown(f'''<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse</p></div>''', unsafe_allow_html=True)
 
-# 2. Fachada
+# Fachada
 if os.path.exists(path_fachada):
     fachada_base64 = get_base64_of_bin_file(path_fachada)
-    c_f1, c_f2, c_f3 = st.columns([1, 6, 1])
-    with c_f2:
-        st.markdown(f'''
-            <a href="{url_senai}" target="_blank" class="img-3d-link">
-                <img src="data:image/jpeg;base64,{fachada_base64}" style="width: 100%;">
-            </a>
-        ''', unsafe_allow_html=True)
+    st.markdown(f'''<div style="text-align:center; padding: 20px;"><img src="data:image/jpeg;base64,{fachada_base64}" style="width: 80%; border-radius: 20px; box-shadow: 10px 10px 20px #bebebe;"></div>''', unsafe_allow_html=True)
 
-with st.spinner("Sincronizando cursos..."):
-    dados_cursos = buscar_cursos_dinamicos()
+dados_cursos = buscar_cursos_dinamicos()
 
 # Formulário
-col_main1, col_main2, col_main3 = st.columns([1, 2, 1])
-with col_main2:
-    st.markdown("<h3 style='text-align: center; margin-top: 20px; color: #000000;'>📋 Cadastro de Interesse</h3>", unsafe_allow_html=True)
-    
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    st.markdown("<h3 style='text-align: center; color: #000;'>📋 Cadastro</h3>", unsafe_allow_html=True)
     area_sel = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
     opcoes = sorted(dados_cursos[area_sel]) if area_sel != "Selecione..." else []
     curso_sel = st.selectbox("Curso:", ["Aguardando área..."] + opcoes, disabled=(area_sel == "Selecione..."))
 
-    with st.form("form_3d", clear_on_submit=True):
+    with st.form("form_registro", clear_on_submit=True):
         nome = st.text_input("Nome Completo")
         email = st.text_input("E-mail")
         whats = st.text_input("WhatsApp")
@@ -263,14 +206,14 @@ with col_main2:
             if area_sel != "Selecione..." and nome and email:
                 data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 if salvar_novo_lead([nome, email, whats, area_sel, curso_sel, obs, data_atual]):
-                    st.success(f"Excelente, {nome}! Registramos seu interesse. Entraremos em contato assim que as inscrições para o curso estiverem abertas.")
+                    st.success(f"Excelente, {nome}! Registramos seu interesse. Entraremos em contato em breve.")
                     st.balloons()
-            else: st.error("Por favor, preencha os campos obrigatórios.")
+            else: st.error("Preencha os campos obrigatórios.")
 
-# --- ADMIN ---
+# ADMIN
 st.sidebar.markdown("---")
-senha = st.sidebar.text_input("Senha", type="password")
+senha = st.sidebar.text_input("Acesso", type="password")
 if senha == "Celina2610$$":
-    if st.sidebar.checkbox("Ver Dados"):
+    if st.sidebar.checkbox("Ver Leads"):
         df = ler_todos_leads()
         if not df.empty: st.dataframe(df)
