@@ -84,20 +84,22 @@ def ler_todos_leads():
         return pd.DataFrame(values[1:], columns=values[0]) if values else pd.DataFrame()
     except: return pd.DataFrame()
 
-# --- CABEÇALHO ---
+# --- 1. EXIBIÇÃO DA LOGO (NO TOPO) ---
+path_logo = os.path.join("imagens", "logo.png")
+if os.path.exists(path_logo):
+    c_logo1, c_logo2, c_logo3 = st.columns([2, 1, 2])
+    with c_logo2: 
+        st.image(Image.open(path_logo), width=160)
+
+# --- 2. CABEÇALHO VERMELHO ---
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse</p></div>', unsafe_allow_html=True)
 
-# --- EXIBIÇÃO DA IMAGEM DA ESCOLA (CORREÇÃO DEFINITIVA) ---
-c_img1, c_img2, c_img3 = st.columns([1, 4, 1])
-with c_img2:
-    # Apenas tenta carregar imagens locais garantidas para evitar o ícone quebrado
-    path_escola = os.path.join("imagens", "frente_escola.png")
-    path_logo = os.path.join("imagens", "logo.png")
-    
-    if os.path.exists(path_escola):
-        st.image(Image.open(path_escola), use_container_width=True)
-    elif os.path.exists(path_logo):
-        st.image(Image.open(path_logo), use_container_width=True)
+# --- 3. EXIBIÇÃO DA FACHADA DA ESCOLA (ABAIXO DO CABEÇALHO) ---
+path_fachada = os.path.join("imagens", "fachada.jpg")
+if os.path.exists(path_fachada):
+    c_fac1, c_fac2, c_fac3 = st.columns([1, 4, 1])
+    with c_fac2:
+        st.image(Image.open(path_fachada), use_container_width=True)
 
 # --- INTERFACE PRINCIPAL ---
 dados_cursos = buscar_cursos_dinamicos()
