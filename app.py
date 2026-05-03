@@ -4,7 +4,6 @@ from datetime import datetime
 import os
 import requests
 from bs4 import BeautifulSoup
-from PIL import Image
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import base64
@@ -17,7 +16,7 @@ def get_base64_of_bin_file(bin_file):
         data = f.read()
     return base64.b64encode(data).decode()
 
-# --- CSS: FOCO EM TAMANHO REAL E LEGIBILIDADE ---
+# --- CSS: FOCO EM TAMANHO NATURAL E LEGIBILIDADE ---
 st.markdown("""
     <style>
     .stApp { background-color: #e0e5ec; }
@@ -38,16 +37,15 @@ st.markdown("""
     }
     .header-senai h1 { font-size: 26px !important; margin: 0; font-weight: 800; color: white !important; }
 
-    /* IMAGEM DA FACHADA: Agora ocupando espaço real */
+    /* IMAGEM DA FACHADA: Tamanho Natural e Centralizada */
     .img-fachada-container {
         width: 100%;
-        display: flex;
-        justify-content: center;
-        margin: 10px 0;
+        text-align: center;
+        margin: 20px 0;
     }
     .img-fachada-container img {
-        width: 100%;
-        max-width: 1000px; /* Limite para não estourar em telas gigantes */
+        max-width: 100%; /* Garante que não estoure a tela do celular */
+        height: auto;    /* Mantém a proporção original */
         border-radius: 10px;
     }
 
@@ -104,14 +102,14 @@ def buscar_cursos_dinamicos():
 
 # --- INTERFACE ---
 
-# 1. Logo (Simples)
+# 1. Logo
 if os.path.exists(path_logo):
     st.image(path_logo, width=120)
 
 # 2. Cabeçalho
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS - UNIT 122</h1></div>', unsafe_allow_html=True)
 
-# 3. Imagem da Fachada (Sem molduras cinzas)
+# 3. Imagem da Fachada (Tamanho Natural)
 if os.path.exists(path_fachada):
     img_64 = get_base64_of_bin_file(path_fachada)
     st.markdown(f'<div class="img-fachada-container"><img src="data:image/jpeg;base64,{img_64}"></div>', unsafe_allow_html=True)
