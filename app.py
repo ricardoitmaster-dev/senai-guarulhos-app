@@ -5,6 +5,8 @@ import os
 from PIL import Image
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+import requests
+from bs4 import BeautifulSoup
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
@@ -55,13 +57,31 @@ def salvar_dados(df):
         return True
     except: return False
 
+# --- FUNÇÃO DO ROBÔ DE CONSULTA (WEB SCRAPING) ---
+def verificar_curso_no_site(nome_curso):
+    url_unidade = "https://www.sp.senai.br/unidade/guarulhos/"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+    try:
+        response = requests.get(url_unidade, headers=headers, timeout=10)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            texto_pagina = soup.get_text().lower()
+            # Busca simples por palavra-chave do curso
+            if nome_curso.lower() in texto_pagina:
+                return True
+        return False
+    except:
+        return False
+
 # --- MAPEAMENTO DE CURSOS ---
 dados_cursos = {
-    "Administração e Gestão": ["Almoxarife", "Assistente Administrativo", "Assistente de RH", "Logística"],
-    "Eletroeletrônica": ["Eletricista Instalador", "Comandos Elétricos", "CLP"],
-    "Metalmecânica": ["Mecânico de Usinagem", "Soldador", "Programador e Operador de CNC"],
-    "Tecnologia da Informação": ["Excel Avançado", "IA Generativa", "Power BI", "Técnico em Desenvolvimento de Sistemas"],
-    "Automobilística": ["Mecânico de Automóveis", "Eletricista Veicular"]
+   "Administração e Gestão": ["Almoxarife", "Assistente Administrativo", "Assistente de RH", "Logística"],
+   "Eletroeletrônica": ["Eletricista Instalador", "Comandos Elétricos", "CLP"],
+   "Metalmecânica": ["Mecânico de Usinagem", "Soldador", "Programador e Operador de CNC"],
+   "Tecnologia da Informação": ["Excel Avançado", "IA Generativa", "Power BI", "Técnico em Desenvolvimento de Sistemas"],
+   "Automobilística": ["Mecânico de Automóveis", "Eletricista Veicular"]
 }
 
 # --- ESTILO E IMAGENS ---
@@ -82,13 +102,27 @@ if os.path.exists(path_fachada):
 
 st.write("---")
 
-# --- FORMULÁRIO (Onde o 'btn' é definido) ---
+# --- FORMULÁRIO ---
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     st.write("### 📋 Ficha de Interesse")
+    
     area_sel = st.selectbox("1. Selecione a Área:", ["Selecione..."] + sorted(list(dados_cursos.keys())))
+    
     lista_cursos = ["Selecione..."] + sorted(dados_cursos[area_sel]) if area_sel != "Selecione..." else ["Selecione a área"]
     curso_sel = st.selectbox("2. Selecione o Curso:", lista_cursos)
+
+    # LÓGICA DE CONSULTA AUTOMÁTICA
+    if curso_sel not in ["Selecione...", "Selecione a área"]:
+        with st.spinner(f'Verificando disponibilidade de {curso_sel}...'):
+            existe_no_site = verificar_curso_no_site(curso_sel)
+            
+            if existe_no_site:
+                st.success(f"✅ **O curso de {curso_sel} está disponível!**")
+                st.info("📍 **Próximo passo:** Para ver datas e turmas, vá até a secretaria do **SENAI Guarulhos 122**.")
+            else:
+                st.warning(f"ℹ️ **Curso em lista de espera.**")
+                st.write("Deixe seu contato abaixo para ser avisado da abertura de novas turmas.")
 
     with st.form("form_final", clear_on_submit=True):
         nome = st.text_input("Nome Completo")
@@ -97,27 +131,19 @@ with col2:
         sugestao = st.text_area("Sugestões ou dúvidas")
         btn = st.form_submit_button("REGISTRAR INTERESSE")
 
-# --- LÓGICA DE ENVIO (Sempre depois da definição do 'btn') ---
 if btn:
-    if nome and email and area_sel != "Selecione..." and service:
+    if nome and email and area_sel != "Selecione..." and curso_sel != "Selecione..." and service:
         df_atual = ler_dados()
-        novo = pd.DataFrame([{"nome": nome, "email": email, "whatsapp": whats, "area": area_sel, "curso": curso_sel, "sugestao": sugestao, "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S")}])
+        novo = pd.DataFrame([{
+            "nome": nome, "email": email, "whatsapp": whats, 
+            "area": area_sel, "curso": curso_sel, "sugestao": sugestao, 
+            "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        }])
+        
         if salvar_dados(pd.concat([df_atual, novo], ignore_index=True)):
             st.success(f"### ✅ Sucesso, {nome}!")
-            st.info("Seu interesse foi registrado. **Assim que o curso for aberto, a equipe do SENAI Guarulhos 122 entrará em contato.**")
             st.balloons()
+        else:
+            st.error("Erro ao salvar dados.")
     else:
-        st.warning("Preencha os campos obrigatórios (Nome, E-mail e Curso).")
-
-# --- PAINEL ADMINISTRATIVO ---
-st.sidebar.title("🔒 Área Administrativa")
-acesso = st.sidebar.text_input("Senha", type="password")
-if acesso == "senai122":
-    st.sidebar.success("Acesso Liberado")
-    df_adm = ler_dados()
-    if not df_adm.empty:
-        if st.sidebar.checkbox("Ver Leads"):
-            st.write("### 📊 Relatório de Leads")
-            st.dataframe(df_adm)
-        csv = df_adm.to_csv(index=False).encode('utf-8-sig')
-        st.sidebar.download_button("📥 Exportar CSV", csv, "leads.csv", "text/csv")
+        st.warning("Preencha todos os campos obrigatórios.")
