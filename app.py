@@ -1,5 +1,5 @@
 import streamlit as st
-import pandas as pd
+import pd
 from datetime import datetime
 import os
 import requests
@@ -60,10 +60,20 @@ st.markdown("""
     }
     .header-senai p { font-size: 16px !important; margin: 5px 0 0 0; opacity: 0.9; color: white !important; }
 
-    /* CORREÇÃO PARA SMARTPHONES: Labels em PRETO */
+    /* CORREÇÃO PARA SMARTPHONES: Labels e Mensagens de Sucesso */
     label, [data-testid="stWidgetLabel"] p {
         color: #000000 !important;
         font-weight: 600 !important;
+    }
+
+    /* FORÇAR COR ESCURA NA MENSAGEM DE SUCESSO (BOX VERDE) */
+    div[data-testid="stNotification"] {
+        background-color: #d4edda !important; /* Fundo verde claro */
+        border: 1px solid #c3e6cb !important;
+    }
+    div[data-testid="stNotification"] div {
+        color: #155724 !important; /* Texto Verde Bem Escuro para contraste */
+        font-weight: 700 !important;
     }
 
     /* CORREÇÃO CRÍTICA DO BOTÃO PARA CELULAR */
@@ -76,16 +86,10 @@ st.markdown("""
         width: 100% !important;
         border: none !important;
         box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff !important;
-        /* Impede que o sistema mobile altere a cor no clique */
         -webkit-tap-highlight-color: transparent;
     }
     
     div.stButton > button p {
-        color: #ffffff !important; /* Força o texto dentro do botão a ser branco */
-    }
-
-    div.stButton > button:hover, div.stButton > button:active, div.stButton > button:focus {
-        background-color: #cc0000 !important;
         color: #ffffff !important;
     }
 
@@ -105,7 +109,6 @@ st.markdown("""
         transition: all 0.3s ease;
         border: 4px solid #e0e5ec;
     }
-    .img-3d-link:hover { transform: scale(0.98); }
 
     /* Formulário Escavado */
     [data-testid="stForm"] {
@@ -113,14 +116,6 @@ st.markdown("""
         border-radius: 30px !important;
         padding: 2rem !important;
         box-shadow: inset 8px 8px 16px #bebebe, inset -8px -8px 16px #ffffff !important;
-        border: none !important;
-    }
-
-    /* Inputs Neumórficos */
-    .stTextInput div[data-baseweb="input"], .stSelectbox div[data-baseweb="select"], .stTextArea div[data-baseweb="textarea"] {
-        background-color: #e0e5ec !important;
-        border-radius: 15px !important;
-        box-shadow: inset 3px 3px 6px #bebebe, inset -3px -3px 6px #ffffff !important;
         border: none !important;
     }
     </style>
