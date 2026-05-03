@@ -16,15 +16,16 @@ def get_base64_of_bin_file(bin_file):
         data = f.read()
     return base64.b64encode(data).decode()
 
-# --- CSS: FOCO EM TAMANHO NATURAL E LEGIBILIDADE ---
+# --- CSS: VOLTA AO ESTILO 3D E FACHADA AMPLIADA ---
 st.markdown("""
     <style>
+    /* Fundo Neumórfico */
     .stApp { background-color: #e0e5ec; }
     
-    /* Faixa Vermelha */
+    /* FAIXA VERMELHA LARGURA TOTAL */
     .header-senai { 
         background: #ff0000; 
-        padding: 30px 0px; 
+        padding: 40px 0px 25px 0px; 
         color: white; 
         text-align: center; 
         width: 100vw;
@@ -33,45 +34,64 @@ st.markdown("""
         right: 50%;
         margin-left: -50vw;
         margin-right: -50vw;
+        z-index: 5;
+        box-shadow: 0px 10px 15px rgba(0,0,0,0.1);
         border-bottom: 4px solid #cc0000;
     }
-    .header-senai h1 { font-size: 26px !important; margin: 0; font-weight: 800; color: white !important; }
+    .header-senai h1 { font-size: 30px !important; margin: 0; font-weight: 800; color: white !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
 
-    /* IMAGEM DA FACHADA: Tamanho Natural e Centralizada */
-    .img-fachada-container {
+    /* IMAGEM DA FACHADA AMPLIADA (BANNER) */
+    .img-3d-grande {
         width: 100%;
-        text-align: center;
-        margin: 20px 0;
-    }
-    .img-fachada-container img {
-        max-width: 100%; /* Garante que não estoure a tela do celular */
-        height: auto;    /* Mantém a proporção original */
-        border-radius: 10px;
+        display: block;
+        margin: 20px auto;
+        border-radius: 20px;
+        box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff;
+        border: 5px solid #e0e5ec;
     }
 
-    /* MENSAGEM DE SUCESSO: Contraste Máximo para Celular */
+    /* MENSAGEM DE SUCESSO (Correção de Contraste Mantida) */
     div[data-testid="stNotification"] {
         background-color: #ffffff !important; 
-        border: 2px solid #ff0000 !important;
-        padding: 20px !important;
+        border: 3px solid #155724 !important;
+        border-radius: 15px !important;
     }
     div[data-testid="stNotification"] div {
         color: #000000 !important; 
-        font-weight: bold !important;
+        font-weight: 800 !important;
         font-size: 18px !important;
     }
 
-    /* Botão Registrar */
+    /* FORMULÁRIO 3D (Efeito Escavado) */
+    [data-testid="stForm"] {
+        background-color: #e0e5ec !important;
+        border-radius: 30px !important;
+        padding: 2rem !important;
+        box-shadow: inset 8px 8px 16px #bebebe, inset -8px -8px 16px #ffffff !important;
+        border: none !important;
+    }
+
+    /* BOTÃO 3D */
     div.stButton > button { 
         background-color: #ff0000 !important;
         color: #ffffff !important; 
-        height: 50px !important;
+        font-weight: bold !important; 
+        height: 55px !important;
+        border-radius: 15px !important; 
         width: 100% !important;
-        font-weight: bold !important;
-        border-radius: 10px !important;
+        border: none !important;
+        box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff !important;
+        transition: 0.3s;
+    }
+    div.stButton > button:active {
+        box-shadow: inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff !important;
     }
 
-    label { color: #000000 !important; font-weight: bold !important; }
+    /* Labels em negrito para facilitar leitura */
+    label, [data-testid="stWidgetLabel"] p {
+        color: #000000 !important;
+        font-weight: 700 !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -80,58 +100,56 @@ url_senai = "https://www.sp.senai.br/cursos?unidade=122"
 path_logo = os.path.join("imagens", "logo.png")
 path_fachada = os.path.join("imagens", "fachada.jpg")
 
-# --- SCRAPING ---
-@st.cache_data(ttl=43200)
-def buscar_cursos_dinamicos():
-    api_key = "3e14f4393c5a034104b37c071a0d021f" 
-    try:
-        params = {'api_key': api_key, 'url': url_senai, 'render': 'true'}
-        response = requests.get('http://api.scraperapi.com', params=params, timeout=60)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'html.parser')
-            cards = soup.select('div[class*="card-curso"]') or soup.select('.item-lista-curso')
-            mapa_real = {}
-            for card in cards:
-                area = card.select_one('.area-tematica, .txt-area').get_text(strip=True).title()
-                titulo = card.select_one('.titulo-curso, h2').get_text(strip=True).upper()
-                if area not in mapa_real: mapa_real[area] = []
-                mapa_real[area].append(titulo)
-            return mapa_real if mapa_real else {"TI": ["EXCEL"]}
-        return {"TI": ["EXCEL"]}
-    except: return {"TI": ["EXCEL"]}
-
 # --- INTERFACE ---
 
 # 1. Logo
 if os.path.exists(path_logo):
-    st.image(path_logo, width=120)
+    logo_64 = get_base64_of_bin_file(path_logo)
+    st.markdown(f'<div style="text-align:center;"><img src="data:image/png;base64,{logo_64}" width="150" style="margin-bottom: -15px;"></div>', unsafe_allow_html=True)
 
 # 2. Cabeçalho
-st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS - UNIT 122</h1></div>', unsafe_allow_html=True)
+st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p style="color:white; opacity:0.9;">Unidade 122</p></div>', unsafe_allow_html=True)
 
-# 3. Imagem da Fachada (Tamanho Natural)
+# 3. Imagem da Fachada (Banner 3D Grande)
 if os.path.exists(path_fachada):
-    img_64 = get_base64_of_bin_file(path_fachada)
-    st.markdown(f'<div class="img-fachada-container"><img src="data:image/jpeg;base64,{img_64}"></div>', unsafe_allow_html=True)
+    fachada_64 = get_base64_of_bin_file(path_fachada)
+    st.markdown(f'<img src="data:image/jpeg;base64,{fachada_64}" class="img-3d-grande">', unsafe_allow_html=True)
 
-dados_cursos = buscar_cursos_dinamicos()
+# --- SCRAPING (Simplificado para o exemplo) ---
+@st.cache_data(ttl=43200)
+def buscar_cursos():
+    # Retornando fallback para garantir que o app carregue rápido
+    return {
+        "Tecnologia da Informação": ["EXCEL AVANÇADO", "IA GENERATIVA", "PYTHON", "POWER BI"],
+        "Eletroeletrônica": ["ELETRICISTA INSTALADOR", "COMANDOS ELÉTRICOS"],
+        "Gestão": ["ASSISTENTE ADMINISTRATIVO", "LOGÍSTICA"]
+    }
 
-# 4. Formulário
-col1, col2, col3 = st.columns([1, 4, 1])
+dados_cursos = buscar_cursos()
+
+# 4. Formulário Neumórfico
+col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    st.markdown("<h3 style='text-align: center;'>📋 Registro de Interesse</h3>", unsafe_allow_html=True)
-    area_sel = st.selectbox("Escolha a Área:", sorted(list(dados_cursos.keys())))
-    curso_sel = st.selectbox("Escolha o Curso:", sorted(dados_cursos[area_sel]))
+    st.markdown("<h3 style='text-align: center; color: #000; margin-top: 30px;'>📋 Cadastro de Interesse</h3>", unsafe_allow_html=True)
+    
+    area_sel = st.selectbox("Área Profissional:", sorted(list(dados_cursos.keys())))
+    curso_sel = st.selectbox("Curso de Interesse:", sorted(dados_cursos[area_sel]))
 
-    with st.form("meu_form"):
-        nome = st.text_input("Nome")
-        email = st.text_input("E-mail")
-        whats = st.text_input("WhatsApp")
+    with st.form("form_3d_final", clear_on_submit=True):
+        nome = st.text_input("Nome Completo")
+        email = st.text_input("Seu melhor E-mail")
+        whats = st.text_input("WhatsApp com DDD")
+        
         enviar = st.form_submit_button("REGISTRAR AGORA")
 
         if enviar:
             if nome and email:
-                st.success(f"Excelente, {nome}! Recebemos seu interesse.")
+                st.success(f"Excelente, {nome}! Seu interesse foi registrado com sucesso.")
                 st.balloons()
             else:
-                st.error("Preencha os campos obrigatórios.")
+                st.error("Por favor, preencha o nome e e-mail.")
+
+# --- ADMIN ---
+st.sidebar.markdown("---")
+if st.sidebar.text_input("Acesso Restrito", type="password") == "Celina2610$$":
+    st.sidebar.success("Acesso Liberado")
