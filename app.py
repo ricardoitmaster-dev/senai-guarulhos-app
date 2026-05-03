@@ -55,6 +55,23 @@ def salvar_dados(df):
         return True
     except: return False
 
+# --- PAINEL ADMINISTRATIVO (BARRA LATERAL) ---
+with st.sidebar:
+    st.header("🔐 Painel Adm")
+    senha = st.text_input("Senha de acesso:", type="password")
+    
+    # Substitua 'senai122' pela sua senha de preferência
+    if senha == "senai122":
+        st.success("Acesso Autorizado")
+        if st.button("📊 Ver Lista de Interessados"):
+            df_leads = ler_dados()
+            st.write("### Candidatos Registrados")
+            st.dataframe(df_leads)
+            
+            # Botão para exportar CSV
+            csv = df_leads.to_csv(index=False).encode('utf-8')
+            st.download_button("📥 Baixar Planilha (CSV)", data=csv, file_name="interessados_senai.csv", mime="text/csv")
+
 # --- MAPEAMENTO DE CURSOS ---
 dados_cursos = {
     "Administração e Gestão": ["Almoxarife", "Assistente Administrativo", "Assistente de RH", "Logística"],
@@ -82,7 +99,7 @@ if os.path.exists(path_fachada):
 
 st.write("---")
 
-# --- FORMULÁRIO (Onde o 'btn' é definido) ---
+# --- FORMULÁRIO ---
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     st.write("### 📋 Ficha de Interesse")
@@ -97,7 +114,7 @@ with col2:
         sugestao = st.text_area("Sugestões ou dúvidas")
         btn = st.form_submit_button("REGISTRAR INTERESSE")
 
-# --- LÓGICA DE ENVIO (Sempre depois da definição do 'btn') ---
+# --- LÓGICA DE ENVIO ---
 if btn:
     if nome and email and area_sel != "Selecione..." and service:
         df_atual = ler_dados()
