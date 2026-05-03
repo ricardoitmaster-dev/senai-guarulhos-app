@@ -18,34 +18,45 @@ def get_base64_of_bin_file(bin_file):
         data = f.read()
     return base64.b64encode(data).decode()
 
-# --- CSS: ESTILO 3D E FAIXA FULL-WIDTH ---
+# --- CSS: ESTILO 3D E CORREÇÃO DA LOGO/FAIXA ---
 st.markdown("""
     <style>
     /* Fundo Neumórfico */
     .stApp { background-color: #e0e5ec; }
     
+    /* Container do Logo para garantir que fique acima de tudo */
+    .logo-container {
+        position: relative;
+        z-index: 10;
+        margin-bottom: -20px; /* Faz a faixa vermelha começar logo abaixo */
+        display: flex;
+        justify-content: center;
+        padding-top: 10px;
+    }
+
     /* FAIXA VERMELHA LARGURA TOTAL */
     .header-senai { 
         background: #ff0000; 
-        padding: 25px 0px;
+        padding: 40px 0px 25px 0px; /* Aumentei o padding superior */
         color: white; 
         text-align: center; 
-        width: 100vw; /* Ocupa a largura total da janela */
+        width: 100vw;
         position: relative;
         left: 50%;
         right: 50%;
         margin-left: -50vw;
         margin-right: -50vw;
-        margin-top: -50px; /* Ajuste para subir e encostar no topo se necessário */
-        margin-bottom: 30px;
+        z-index: 5;
         box-shadow: 0px 10px 15px rgba(0,0,0,0.1);
         border-bottom: 4px solid #cc0000;
     }
+    
     .header-senai h1 { 
         font-size: 28px !important; 
         margin: 0; 
         text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         font-weight: 800;
+        letter-spacing: 1px;
     }
     .header-senai p { font-size: 16px !important; margin: 5px 0 0 0; opacity: 0.9; }
 
@@ -183,16 +194,16 @@ def ler_todos_leads():
 
 # --- INTERFACE ---
 
-# 1. Logo com Link e Efeito 3D
+# 1. Logo com Link e Efeito 3D (Corrigido para ficar por cima)
 if os.path.exists(path_logo):
     logo_base64 = get_base64_of_bin_file(path_logo)
-    c_l1, c_l2, c_l3 = st.columns([2, 1, 2])
-    with c_l2:
-        st.markdown(f'''
+    st.markdown(f'''
+        <div class="logo-container">
             <a href="{url_senai}" target="_blank" class="img-3d-link">
                 <img src="data:image/png;base64,{logo_base64}" width="150">
             </a>
-        ''', unsafe_allow_html=True)
+        </div>
+    ''', unsafe_allow_html=True)
 
 # FAIXA VERMELHA LARGURA TOTAL
 st.markdown(f'''
