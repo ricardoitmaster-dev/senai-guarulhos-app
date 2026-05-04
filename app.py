@@ -18,7 +18,7 @@ def get_base64_of_bin_file(bin_file):
         data = f.read()
     return base64.b64encode(data).decode()
 
-# --- CSS: ESTILO 3D, FAIXA TOTAL E CORREÇÃO DE CORES MOBILE ---
+# --- CSS: ESTILO 3D, FAIXA TOTAL, CORREÇÃO DE CORES E RODAPÉ ---
 st.markdown("""
     <style>
     /* Fundo Neumórfico */
@@ -121,6 +121,46 @@ st.markdown("""
         border-radius: 15px !important;
         box-shadow: inset 3px 3px 6px #bebebe, inset -3px -3px 6px #ffffff !important;
         border: none !important;
+    }
+
+    /* ESTILO DO RODAPÉ INSTITUCIONAL */
+    .footer-container {
+        background-color: #b91d1d;
+        color: white;
+        padding: 40px 20px;
+        margin-top: 50px;
+        width: 100vw;
+        position: relative;
+        left: 50%;
+        right: 50%;
+        margin-left: -50vw;
+        margin-right: -50vw;
+        font-family: sans-serif;
+    }
+    .footer-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+    .footer-section {
+        flex: 1;
+        min-width: 250px;
+        margin-bottom: 20px;
+        padding: 0 15px;
+    }
+    .footer-section h4 { font-weight: bold; margin-bottom: 15px; text-transform: uppercase; font-size: 14px; }
+    .footer-section p { font-size: 13px; line-height: 1.6; opacity: 0.9; }
+    .footer-bottom {
+        text-align: center;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        padding-top: 20px;
+        margin-top: 20px;
+        font-size: 12px;
+        background-color: #ff0000;
+        width: 100vw;
+        padding-bottom: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -256,16 +296,41 @@ with col_main2:
         if enviar:
             if area_sel != "Selecione..." and nome and email:
                 data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                if salvar_novo_lead([nome, email, whats, area_sel, curso_sel, obs, data_atual]):
+                # CORREÇÃO DA ASPA SIMPLES PARA EVITAR ERRO DE VALIDAÇÃO NO GOOGLE SHEETS
+                whats_formatado = f"'{whats}"
+                if salvar_novo_lead([nome, email, whats_formatado, area_sel, curso_sel, obs, data_atual]):
                     st.success(f"Excelente, {nome}! Registramos seu interesse. Entraremos em contato assim que as inscrições para o curso estiverem abertas.")
                     st.balloons()
+                else: st.error("Erro ao salvar dados. Tente novamente.")
             else: st.error("Por favor, preencha os campos obrigatórios.")
+
+# --- RODAPÉ INSTITUCIONAL (FINAL DA PÁGINA) ---
+st.markdown("""
+    <div class="footer-container">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Edifício Sede FIESP</h4>
+                <p>Av. Paulista, 1313, São Paulo/SP<br>CEP 01311-923</p>
+            </div>
+            <div class="footer-section">
+                <h4>Central de Relacionamento</h4>
+                <p>(11) 3322-0050 (Telefone/WhatsApp)<br>0800-055-1000 (Interior de SP)</p>
+            </div>
+            <div class="footer-section">
+                <h4>Unidade 122</h4>
+                <p>SENAI Guarulhos<br>Excelência em Formação Profissional</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            Copyright 2026 © Todos os direitos reservados.
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
 # --- ADMIN (SEGURANÇA REFORÇADA COM SECRETS) ---
 st.sidebar.markdown("---")
 st.sidebar.subheader("🔒 Área Administrativa")
 
-# Recupera a senha dos secrets de forma segura
 try:
     senha_mestra = st.secrets["auth"]["admin_password"]
 except:
