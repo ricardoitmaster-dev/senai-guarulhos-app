@@ -18,7 +18,7 @@ def get_base64_of_bin_file(bin_file):
         return base64.b64encode(data).decode()
     return ""
 
-# --- DICIONÁRIO DE CURSOS (Sua Lista Atualizada e Fixa) ---
+# --- DICIONÁRIO DE CURSOS (Lista Fixa e Atualizada) ---
 DADOS_CURSOS_LOCAL = {
     "Metalmecânica": [
         "MECÂNICO DE USINAGEM", "PROGRAMADOR E OPERADOR DE CNC", "SOLDADOR MAG",
@@ -54,7 +54,7 @@ DADOS_CURSOS_LOCAL = {
     ]
 }
 
-# --- ESTILO CSS (Neumorfismo e Design 122) ---
+# --- ESTILO CSS ---
 st.markdown("""
     <style>
     .stApp { background-color: #e0e5ec; }
@@ -77,7 +77,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- GOOGLE SHEETS (Funções de Dados) ---
+# --- FUNÇÕES GOOGLE SHEETS ---
 def conectar_sheets():
     try:
         s = st.secrets["connections"]["gsheets"]
@@ -94,6 +94,17 @@ def conectar_sheets():
         return build("sheets", "v4", credentials=creds, cache_discovery=False)
     except: return None
 
+def carregar_dados_adm():
+    service = conectar_sheets()
+    if service:
+        url = st.secrets["connections"]["gsheets"]["spreadsheet"]
+        id_planilha = url.split("/d/")[1].split("/")[0]
+        result = service.spreadsheets().values().get(spreadsheetId=id_planilha, range="A1:G1000").execute()
+        values = result.get('values', [])
+        if values:
+            return pd.DataFrame(values[1:], columns=values[0])
+    return None
+
 def salvar_lead(dados):
     service = conectar_sheets()
     if service:
@@ -106,62 +117,71 @@ def salvar_lead(dados):
         return True
     return False
 
-# --- BARRA LATERAL (Fachada e Info) ---
+# --- BARRA LATERAL ---
 with st.sidebar:
-    path_fachada = os.path.join("imagens", "fachada.png")
-    if os.path.exists(path_fachada):
-        st.image(path_fachada, caption="SENAI Guarulhos - Unidade 122")
+    path_logo_side = os.path.join("imagens", "logo.png")
+    if os.path.exists(path_logo_side):
+        st.image(path_logo_side, width=150)
+    st.markdown("### 🏢 Unidade 122")
+    st.info("Portal de captação de interesse para novos treinamentos.")
     
-    st.markdown("---")
-    st.markdown("### 🏢 Sobre a Unidade")
-    st.info("O SENAI 122 é referência em Metalmecânica e Tecnologia da Informação na região de Guarulhos.")
-    
-    # --- PAINEL ADM (Restaurado) ---
     st.markdown("---")
     with st.expander("🔐 Área Administrativa"):
-        senha = st.text_input("Senha", type="password")
-        if senha == st.secrets.get("admin_password", "senai122"):
+        senha_input = st.text_input("Senha", type="password")
+        # Comparação com o segredo criptografado nos Secrets
+        if senha_input == st.secrets["admin_password"]:
             st.success("Acesso Liberado")
-            if st.button("Visualizar Leads"):
-                st.write("Conectando à base de dados...")
-                # Aqui você pode adicionar a lógica de carregar o DataFrame da planilha
+            ver_relatorio = st.checkbox("Visualizar Tabela de Leads")
+        else:
+            ver_relatorio = False
 
-# --- CABEÇALHO ---
-path_logo = os.path.join("imagens", "logo.png")
-if os.path.exists(path_logo):
-    logo_64 = get_base64_of_bin_file(path_logo)
-    st.markdown(f'<div style="text-align: center; margin-bottom: -20px;"><img src="data:image/png;base64,{logo_64}" width="150"></div>', unsafe_allow_html=True)
+# --- TELA PRINCIPAL ---
 
-st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS - UNIDADE 122</h1><p>Excelência em Formação Profissional</p></div>', unsafe_allow_html=True)
+# 1. Tarja Vermelha
+st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Registro de Interesse Profissional</p></div>', unsafe_allow_html=True)
 
-# --- FORMULÁRIO DE INTERESSE ---
+# 2. Imagem da Fachada (Abaixo da tarja)
+path_fachada = os.path.join("imagens", "fachada.jpg")
+if os.path.exists(path_fachada):
+    st.image(path_fachada, use_column_width=True, caption="Unidade 122 - Guarulhos")
+
+# 3. Lógica do Relatório ADM (Se ativado na lateral)
+if ver_relatorio:
+    st.markdown("### 📊 Relatório de Interessados")
+    df = carregar_dados_adm()
+    if df is not None:
+        st.dataframe(df, use_container_width=True)
+    else:
+        st.error("Não foi possível carregar os dados da planilha.")
+    st.markdown("---")
+
+# 4. Formulário
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    st.markdown("<br><h4 style='text-align: center; color: #333;'>Manifestação de Interesse em Cursos</h4>", unsafe_allow_html=True)
+    st.markdown("<br><h4 style='text-align: center; color: #333;'>Cadastro de Candidato</h4>", unsafe_allow_html=True)
     
-    area_sel = st.selectbox("Escolha a Área de Interesse:", ["Selecione..."] + sorted(list(DADOS_CURSOS_LOCAL.keys())))
-    lista_cursos = sorted(DADOS_CURSOS_LOCAL[area_sel]) if area_sel != "Selecione..." else []
-    curso_sel = st.selectbox("Escolha o Curso:", ["Aguardando Área..."] + lista_cursos, disabled=(area_sel == "Selecione..."))
+    area_sel = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(DADOS_CURSOS_LOCAL.keys())))
+    lista_c = sorted(DADOS_CURSOS_LOCAL[area_sel]) if area_sel != "Selecione..." else []
+    curso_sel = st.selectbox("Curso de Interesse:", ["Aguardando Área..."] + lista_c, disabled=(area_sel == "Selecione..."))
 
     with st.form("form_registro", clear_on_submit=True):
-        nome = st.text_input("Seu Nome Completo")
-        email = st.text_input("Seu melhor E-mail")
-        whats = st.text_input("WhatsApp para contato")
-        obs = st.text_area("Alguma dúvida ou observação?")
-        btn_enviar = st.form_submit_button("REGISTRAR MEU INTERESSE")
+        nome = st.text_input("Nome Completo")
+        email = st.text_input("E-mail")
+        whats = st.text_input("WhatsApp")
+        obs = st.text_area("Observações Adicionais")
+        enviar = st.form_submit_button("REGISTRAR INTERESSE")
 
-        if btn_enviar:
+        if enviar:
             if area_sel != "Selecione..." and nome and email and curso_sel != "Aguardando Área...":
-                data_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                if salvar_lead([nome, email, f"'{whats}", area_sel, curso_sel, obs, data_hora]):
-                    st.success(f"Obrigado pelo interesse, {nome}!")
-                    # --- MENSAGEM RESTAURADA ---
+                data_h = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                if salvar_lead([nome, email, f"'{whats}", area_sel, curso_sel, obs, data_h]):
+                    st.success(f"Registro realizado com sucesso, {nome}!")
                     st.info("✅ Entraremos em contato com você assim que houver turmas abertas para o curso selecionado.")
                     st.balloons()
                 else:
-                    st.error("Erro técnico ao salvar. Tente novamente em instantes.")
+                    st.error("Erro ao salvar dados. Verifique a planilha.")
             else:
-                st.warning("Por favor, preencha todos os campos obrigatórios.")
+                st.warning("Preencha todos os campos antes de enviar.")
 
 # --- RODAPÉ ---
-st.markdown('<div class="footer-custom">Copyright 2026 © SENAI Guarulhos 122 - Gestão Ricardo IT Master</div>', unsafe_allow_html=True)
+st.markdown('<div class="footer-custom">Copyright 2026 © SENAI Guarulhos 122 - Ricardo IT Master</div>', unsafe_allow_html=True)
