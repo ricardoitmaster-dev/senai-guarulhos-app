@@ -27,28 +27,9 @@ def get_base64_of_bin_file(bin_file):
 st.markdown("""
     <style>
     .stApp { background-color: #e0e5ec; }
-    
-    /* MOLDURA 3D QUE OCUPA TODA A LARGURA DA COLUNA */
-    .moldura-3d-ajustada { 
-        display: block; 
-        border-radius: 25px; 
-        box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff; 
-        border: 4px solid #e0e5ec; 
-        overflow: hidden; 
-        margin: 25px auto; 
-        width: 100%; /* Ocupa toda a largura do container */
-    }
-    
-    /* IMAGEM EXPANDIDA PARA PREENCHER A MOLDURA */
-    .moldura-3d-ajustada img { 
-        display: block; 
-        width: 100%; /* Faz a imagem crescer até o limite da moldura */
-        height: auto; 
-        border-radius: 20px; 
-    }
-
     .logo-container { position: relative; z-index: 10; margin-bottom: -20px; display: flex; justify-content: center; padding-top: 10px; }
-    
+    .moldura-3d-ajustada { display: inline-block; border-radius: 25px; box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff; border: 4px solid #e0e5ec; overflow: hidden; line-height: 0; margin: 25px auto; }
+    .moldura-3d-ajustada img { border-radius: 20px; display: block; max-width: 100%; height: auto; }
     .header-senai { background: #ff0000; padding: 40px 0px 25px 0px; color: white; text-align: center; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; z-index: 5; box-shadow: 0px 10px 15px rgba(0,0,0,0.1); border-bottom: 4px solid #cc0000; }
     .header-senai h1 { font-size: 28px !important; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-weight: 800; color: white !important; }
     
@@ -120,13 +101,15 @@ def ler_todos_leads():
 path_logo = os.path.join("imagens", "logo.png")
 path_fachada = os.path.join("imagens", "fachada.jpg")
 
-# Cabeçalho Vermelho
+if os.path.exists(path_logo):
+    logo_base = get_base64_of_bin_file(path_logo)
+    st.markdown(f'<div class="logo-container"><div class="moldura-3d-ajustada"><img src="data:image/png;base64,{logo_base}" width="150"></div></div>', unsafe_allow_html=True)
+
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse Profissional</p></div>', unsafe_allow_html=True)
 
-# Fachada Expandida
 if os.path.exists(path_fachada):
     fachada_base = get_base64_of_bin_file(path_fachada)
-    st.markdown(f'<div class="moldura-3d-ajustada"><img src="data:image/jpeg;base64,{fachada_base}"></div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="text-align:center;"><div class="moldura-3d-ajustada"><img src="data:image/jpeg;base64,{fachada_base}" style="width: 750px;"></div></div>', unsafe_allow_html=True)
 
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
@@ -150,7 +133,7 @@ with col2:
                 else: st.error("Erro ao salvar.")
             else: st.error("Preencha os campos obrigatórios.")
 
-# --- RODAPÉ ---
+# --- RODAPÉ COM LINKS OFICIAIS (Fiel ao Site) ---
 footer_html = """
 <div class="footer-container">
     <div class="footer-top">
