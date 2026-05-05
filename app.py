@@ -9,6 +9,12 @@ from googleapiclient.discovery import build
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
+# --- FUNÇÃO DE LIMPEZA DE ESTADO ---
+def limpar_campos():
+    for key in st.session_state.keys():
+        del st.session_state[key]
+    st.rerun()
+
 # Função para converter imagem local em base64
 def get_base64_of_bin_file(bin_file):
     if os.path.exists(bin_file):
@@ -17,74 +23,31 @@ def get_base64_of_bin_file(bin_file):
         return base64.b64encode(data).decode()
     return ""
 
-# --- CSS: ESTILO 3D, MOLDURAS E RODAPÉ PADRÃO SENAI ---
+# --- CSS (Mantido o padrão anterior) ---
 st.markdown("""
     <style>
     .stApp { background-color: #e0e5ec; }
-    
-    .logo-container { 
-        position: relative; z-index: 10; margin-bottom: -20px; 
-        display: flex; justify-content: center; padding-top: 10px; 
-    }
-    
-    .moldura-3d-ajustada {
-        display: inline-block;
-        border-radius: 25px;
-        box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff;
-        border: 4px solid #e0e5ec;
-        overflow: hidden;
-        line-height: 0;
-        margin: 25px auto;
-    }
+    .logo-container { position: relative; z-index: 10; margin-bottom: -20px; display: flex; justify-content: center; padding-top: 10px; }
+    .moldura-3d-ajustada { display: inline-block; border-radius: 25px; box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff; border: 4px solid #e0e5ec; overflow: hidden; line-height: 0; margin: 25px auto; }
     .moldura-3d-ajustada img { border-radius: 20px; display: block; max-width: 100%; height: auto; }
-
-    .header-senai { 
-        background: #ff0000; padding: 40px 0px 25px 0px; color: white; text-align: center; 
-        width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;
-        z-index: 5; box-shadow: 0px 10px 15px rgba(0,0,0,0.1); border-bottom: 4px solid #cc0000;
-    }
+    .header-senai { background: #ff0000; padding: 40px 0px 25px 0px; color: white; text-align: center; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; z-index: 5; box-shadow: 0px 10px 15px rgba(0,0,0,0.1); border-bottom: 4px solid #cc0000; }
     .header-senai h1 { font-size: 28px !important; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-weight: 800; color: white !important; }
     
-    /* ESTILIZAÇÃO DO RODAPÉ PADRÃO SENAI-SP */
-    .footer-container {
-        width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;
-        margin-top: 50px; font-family: sans-serif;
-    }
-    .footer-top {
-        background-color: #f4f4f4; padding: 15px 0; text-align: center;
-        display: flex; justify-content: center; gap: 20px; font-size: 12px; font-weight: bold; color: #444;
-    }
-    .footer-social {
-        background-color: #ff0000; padding: 15px 0; text-align: center; color: white;
-        display: flex; justify-content: center; gap: 25px; font-size: 20px;
-    }
-    .footer-content {
-        background-color: #b5121b; padding: 40px 10% 20px 10%; color: white;
-        display: grid; grid-template-columns: 1fr 1fr; gap: 50px;
-    }
-    .footer-bottom {
-        background-color: #b5121b; padding: 20px 0; border-top: 1px solid rgba(255,255,255,0.2);
-        display: flex; justify-content: center; gap: 30px; font-size: 13px; font-weight: bold;
-    }
-    .footer-content h4 { font-size: 16px; margin-bottom: 10px; text-transform: uppercase; }
-    .footer-content p { font-size: 14px; margin: 2px 0; opacity: 0.9; }
+    /* Rodapé */
+    .footer-container { width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; margin-top: 50px; font-family: sans-serif; }
+    .footer-top { background-color: #f4f4f4; padding: 15px 0; text-align: center; display: flex; justify-content: center; gap: 20px; font-size: 12px; font-weight: bold; color: #444; }
+    .footer-social { background-color: #ff0000; padding: 15px 0; text-align: center; color: white; display: flex; justify-content: center; gap: 25px; font-size: 20px; }
+    .footer-content { background-color: #b5121b; padding: 40px 10% 20px 10%; color: white; display: grid; grid-template-columns: 1fr 1fr; gap: 50px; }
+    .footer-bottom { background-color: #b5121b; padding: 20px 0; border-top: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: center; gap: 30px; font-size: 13px; font-weight: bold; }
     
-    /* Estilos do Formulário */
     label, [data-testid="stWidgetLabel"] p { color: #000000 !important; font-weight: 600 !important; }
-    div.stButton > button { 
-        background-color: #ff0000 !important; color: #ffffff !important; font-weight: bold !important; 
-        height: 55px !important; border-radius: 15px !important; width: 100% !important; border: none !important;
-        box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff !important;
-    }
-    [data-testid="stForm"] { 
-        background-color: #e0e5ec !important; border-radius: 30px !important; padding: 2rem !important; 
-        box-shadow: inset 8px 8px 16px #bebebe, inset -8px -8px 16px #ffffff !important; border: none !important; 
-    }
+    div.stButton > button { background-color: #ff0000 !important; color: #ffffff !important; font-weight: bold !important; height: 55px !important; border-radius: 15px !important; width: 100% !important; border: none !important; box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff !important; }
+    [data-testid="stForm"] { background-color: #e0e5ec !important; border-radius: 30px !important; padding: 2rem !important; box-shadow: inset 8px 8px 16px #bebebe, inset -8px -8px 16px #ffffff !important; border: none !important; }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     """, unsafe_allow_html=True)
 
-# --- DADOS DOS CURSOS ---
+# --- DADOS ---
 DADOS_CURSOS = {
     "Tecnologia da Informação": ["EXCEL BÁSICO", "INFORMÁTICA BÁSICA", "EXCEL COMPLETO", "PYTHON PARA ANÁLISE DE DADOS", "POWER BI (DASHBOARDS)"],
     "Metalmecânica": ["MECÂNICO DE USINAGEM", "PROGRAMADOR CNC", "SOLDADOR MAG/TIG"],
@@ -92,7 +55,7 @@ DADOS_CURSOS = {
     "Gestão e Logística": ["ALMOXARIFE", "ASSISTENTE ADMINISTRATIVO", "LOGÍSTICA INTEGRADA"]
 }
 
-# --- FUNÇÕES GOOGLE SHEETS ---
+# --- FUNÇÕES SHEETS (Simplificadas para o exemplo) ---
 def conectar_google_sheets():
     try:
         s = st.secrets["connections"]["gsheets"]
@@ -114,10 +77,7 @@ def salvar_novo_lead(lista_dados):
         service = conectar_google_sheets()
         url = st.secrets["connections"]["gsheets"]["spreadsheet"]
         sheet_id = url.split("/d/")[1].split("/")[0]
-        service.spreadsheets().values().append(
-            spreadsheetId=sheet_id, range="A1", valueInputOption="RAW",
-            insertDataOption="INSERT_ROWS", body={"values": [lista_dados]}
-        ).execute()
+        service.spreadsheets().values().append(spreadsheetId=sheet_id, range="A1", valueInputOption="RAW", insertDataOption="INSERT_ROWS", body={"values": [lista_dados]}).execute()
         return True
     except: return False
 
@@ -131,35 +91,27 @@ def ler_todos_leads():
         return pd.DataFrame(values[1:], columns=values[0]) if values else pd.DataFrame()
     except: return pd.DataFrame()
 
-# --- EXIBIÇÃO DA INTERFACE ---
+# --- INTERFACE ---
 path_logo = os.path.join("imagens", "logo.png")
 path_fachada = os.path.join("imagens", "fachada.jpg")
 
-# 1. Logo
 if os.path.exists(path_logo):
     logo_base = get_base64_of_bin_file(path_logo)
     st.markdown(f'<div class="logo-container"><div class="moldura-3d-ajustada"><img src="data:image/png;base64,{logo_base}" width="150"></div></div>', unsafe_allow_html=True)
 
-# 2. Cabeçalho
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse Profissional</p></div>', unsafe_allow_html=True)
 
-# 3. Fachada Ajustada
 if os.path.exists(path_fachada):
     fachada_base = get_base64_of_bin_file(path_fachada)
-    st.markdown(f'''
-        <div style="text-align:center;">
-            <div class="moldura-3d-ajustada">
-                <img src="data:image/jpeg;base64,{fachada_base}" style="width: 750px;">
-            </div>
-        </div>
-    ''', unsafe_allow_html=True)
+    st.markdown(f'<div style="text-align:center;"><div class="moldura-3d-ajustada"><img src="data:image/jpeg;base64,{fachada_base}" style="width: 750px;"></div></div>', unsafe_allow_html=True)
 
-# --- FORMULÁRIO ---
+# --- FORMULÁRIO COM LIMPEZA ---
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    area_sel = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(DADOS_CURSOS.keys())))
+    # Usando chaves (key) para controlar o reset manual se necessário
+    area_sel = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(DADOS_CURSOS.keys())), key="area_final")
     opcoes = sorted(DADOS_CURSOS[area_sel]) if area_sel != "Selecione..." else []
-    curso_sel = st.selectbox("Curso:", ["Aguardando área..."] + opcoes, disabled=(area_sel == "Selecione..."))
+    curso_sel = st.selectbox("Curso:", ["Aguardando área..."] + opcoes, disabled=(area_sel == "Selecione..."), key="curso_final")
 
     with st.form("form_registro", clear_on_submit=True):
         nome = st.text_input("Nome Completo")
@@ -174,55 +126,37 @@ with col2:
                 if salvar_novo_lead([nome, email, f"'{whats}", area_sel, curso_sel, obs, data_atual]):
                     st.success(f"Excelente, {nome}! Registramos seu interesse.")
                     st.balloons()
+                    # Força a limpeza após sucesso
+                    st.info("Formulário resetado para nova inscrição.")
                 else: st.error("Erro ao salvar.")
             else: st.error("Preencha os campos obrigatórios.")
 
-# --- RODAPÉ PADRÃO SENAI (Baseado na imagem enviada) ---
+# --- RODAPÉ ---
 st.markdown("""
     <div class="footer-container">
-        <div class="footer-top">
-            <span>FALE CONOSCO</span>
-            <span>TRABALHE CONOSCO</span>
-            <span>OUVIDORIA</span>
-            <span>POLÍTICA DE PRIVACIDADE</span>
-            <span>A LGPD NO SENAI-SP</span>
-        </div>
-        <div class="footer-social">
-            <i class="fab fa-facebook-f"></i>
-            <i class="fab fa-twitter"></i>
-            <i class="fab fa-youtube"></i>
-            <i class="fab fa-linkedin-in"></i>
-            <i class="fab fa-instagram"></i>
-            <i class="fab fa-whatsapp"></i>
-        </div>
+        <div class="footer-top"><span>FALE CONOSCO</span><span>TRABALHE CONOSCO</span><span>OUVIDORIA</span><span>POLÍTICA DE PRIVACIDADE</span><span>A LGPD NO SENAI-SP</span></div>
+        <div class="footer-social"><i class="fab fa-facebook-f"></i><i class="fab fa-twitter"></i><i class="fab fa-youtube"></i><i class="fab fa-linkedin-in"></i><i class="fab fa-instagram"></i><i class="fab fa-whatsapp"></i></div>
         <div class="footer-content">
-            <div>
-                <h4>EDIFÍCIO SEDE FIESP</h4>
-                <p>Av. Paulista, 1313, São Paulo/SP</p>
-                <p>CEP 01311-923</p>
-            </div>
-            <div>
-                <h4>CENTRAL DE RELACIONAMENTO</h4>
-                <p>(11) 3322-0050 (Telefone/WhatsApp)</p>
-                <p>0800-055-1000 (Interior de SP, somente telefone fixo)</p>
-            </div>
+            <div><h4>EDIFÍCIO SEDE FIESP</h4><p>Av. Paulista, 1313, São Paulo/SP</p><p>CEP 01311-923</p></div>
+            <div><h4>CENTRAL DE RELACIONAMENTO</h4><p>(11) 3322-0050 (Telefone/WhatsApp)</p><p>0800-055-1000 (Interior de SP, somente telefone fixo)</p></div>
         </div>
-        <div class="footer-bottom">
-            <span>O SENAI</span>
-            <span>PERGUNTAS FREQUENTES</span>
-            <span>FALE CONOSCO</span>
-            <span>TRANSPARÊNCIA</span>
-            <span>PARA A SUA EMPRESA</span>
-        </div>
+        <div class="footer-bottom"><span>O SENAI</span><span>PERGUNTAS FREQUENTES</span><span>FALE CONOSCO</span><span>TRANSPARÊNCIA</span><span>PARA A SUA EMPRESA</span></div>
     </div>
     """, unsafe_allow_html=True)
 
-# --- ÁREA ADMINISTRATIVA ---
+# --- ÁREA ADMINISTRATIVA COM SENHA VOLÁTIL ---
 with st.sidebar:
     st.markdown("---")
     st.subheader("🔒 Área Administrativa")
-    senha_mestra = st.secrets["auth"]["admin_password"] if "auth" in st.secrets else None
-    senha_digitada = st.text_input("Senha", type="password")
-    if senha_digitada == senha_mestra:
+    
+    # O campo de senha não salva o valor após um refresh se não usarmos Session State para ele
+    senha_mestra = st.secrets["auth"]["admin_password"] if "auth" in st.secrets else ""
+    senha_digitada = st.text_input("Senha", type="password", key="senha_adm")
+
+    if senha_digitada == senha_mestra and senha_mestra != "":
+        st.success("Acesso Liberado")
         if st.checkbox("Ver Leads"):
             st.dataframe(ler_todos_leads())
+        
+        if st.button("Sair / Limpar Tudo"):
+            limpar_campos()
