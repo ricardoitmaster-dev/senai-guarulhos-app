@@ -18,7 +18,7 @@ def get_base64_of_bin_file(bin_file):
         return base64.b64encode(data).decode()
     return ""
 
-# --- DICIONÁRIO DE CURSOS (Lista Fixa e Atualizada) ---
+# --- DICIONÁRIO DE CURSOS (Sua lista incorporada) ---
 DADOS_CURSOS_LOCAL = {
     "Metalmecânica": [
         "MECÂNICO DE USINAGEM", "PROGRAMADOR E OPERADOR DE CNC", "SOLDADOR MAG",
@@ -26,20 +26,25 @@ DADOS_CURSOS_LOCAL = {
         "METROLOGIA APLICADA", "INTELIGÊNCIA ARTIFICIAL NA PROGRAMAÇÃO CNC"
     ],
     "Tecnologia da Informação": [
-        "EXCEL BÁSICO", "EXCEL AVANÇADO", "EXCEL COMPLETO", "INFORMÁTICA BÁSICA",
-        "IA GENERATIVA PARA PRODUTIVIDADE", "Microsoft Al-102 - Soluções em IA",
-        "Microsoft AI-900 - Serviços de IA em Nuvem", "Google Cloud - Fundamentos de IA Generativa",
-        "Google Cloud AI Foundations", "Google Cloud - IA Generativa em Nuvem",
-        "ChatGPT - IA Aplicada à Programação", "Administração de Sistemas ServiceNow - CSA",
-        "Google Antigravity - IA Generativa", "Microsoft AI Foundry - Agentes de IA",
-        "Google Firebase e Gemini", "Programação em IA Generativa",
-        "MARKETING DIGITAL COM IA", "PYTHON PARA ANÁLISE DE DADOS", 
-        "POWER BI (DASHBOARDS)", "TÉCNICO EM DESENVOLVIMENTO DE SISTEMAS"
+        "EXCEL BÁSICO", "INFORMÁTICA BÁSICA", "EXCEL COMPLETO",
+        "Desenvolvimento de soluções em inteligencia artificial - Microsoft Al-102",
+        "Implantação de Serviços de Inteligência Artificial em Nuvem - Microsoft AI-900",
+        "Fundamentos de Inteligência Artificial Generativa - Google Cloud",
+        "Implantação de Serviços de Inteligência Artificial em Nuvem - Google Cloud AI Foundations",
+        "Implantação de Serviços de Inteligência Artificial Generativa em Nuvem - Google Cloud",
+        "Inteligências Artificiais Generativas Aplicada A Programação - Chatgpt",
+        "Administração de Sistemas ServiceNow - CSA", 
+        "Desenvolvimento de Aplicações com IA Generativa utilizando Google Antigravity",
+        "Criação de Agentes de IA com o Microsoft AI Foundry", 
+        "Criação de Aplicativos com Google Firebase e Gemini (PC disponível em Abril)",
+        "Programação em Inteligência Artificial Generativa", 
+        "MARKETING DIGITAL COM INTELIGÊNCIA ARTIFICIAL",
+        "PYTHON PARA ANÁLISE DE DADOS", "POWER BI (DASHBOARDS)", "TÉCNICO EM DESENVOLVIMENTO DE SISTEMAS"
     ],
     "Eletroeletrônica": [
         "ELETRICISTA INSTALADOR", "COMANDOS ELÉTRICOS", "CLP - CONTROLADORES LÓGICOS",
         "INSTALAÇÕES ELÉTRICAS RESIDENCIAIS", "MANUTENÇÃO DE SISTEMAS FOTOVOLTAICOS",
-        "IA APLICADA À DETECÇÃO DE ANOMALIAS EM MÁQUINAS"
+        "INTELIGÊNCIA ARTIFICIAL APLICADO À DETECÇÃO DE ANOMALIAS EM MÁQUINAS"
     ],
     "Gestão e Logística": [
         "QUALIDADE", "ALMOXARIFE", "ASSISTENTE ADMINISTRATIVO",
@@ -49,12 +54,12 @@ DADOS_CURSOS_LOCAL = {
         "MECÂNICO DE AUTOMÓVEIS LEVES", "ELETRICISTA VEICULAR", "SISTEMAS DE INJEÇÃO ELETRÔNICA"
     ],
     "Manutenção e Lubrificação Industrial": [
-        "IA NO MONITORAMENTO DA MANUTENÇÃO PREDITIVA",
-        "DETECÇÃO A LASER E IA PARA LUBRIFICAÇÃO INDUSTRIAL"
+        "INTELIGÊNCIA ARTIFICIAL NO MONITORAMENTO DA MANUTENÇÃO PREDITIVA",
+        "DETECÇÃO A LASER E INTELIGÊNCIA ARTIFICIAL PARA LUBRIFICAÇÃO INDUSTRIAL"
     ]
 }
 
-# --- ESTILO CSS ---
+# --- ESTILO CSS (Design Original) ---
 st.markdown("""
     <style>
     .stApp { background-color: #e0e5ec; }
@@ -77,111 +82,99 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- FUNÇÕES GOOGLE SHEETS ---
+# --- GOOGLE SHEETS ---
 def conectar_sheets():
-    try:
-        s = st.secrets["connections"]["gsheets"]
-        info = {
-            "type": "service_account", "project_id": s["project_id"],
-            "private_key_id": s["private_key_id"],
-            "private_key": s["private_key"].replace("\\n", "\n").strip(),
-            "client_email": s["client_email"], "client_id": s["client_id"],
-            "auth_uri": s["auth_uri"], "token_uri": s["token_uri"],
-            "auth_provider_x509_cert_url": s["auth_provider_x509_cert_url"],
-            "client_x509_cert_url": s["client_x509_cert_url"]
-        }
-        creds = service_account.Credentials.from_service_account_info(info, scopes=["https://www.googleapis.com/auth/spreadsheets"])
-        return build("sheets", "v4", credentials=creds, cache_discovery=False)
-    except: return None
+    s = st.secrets["connections"]["gsheets"]
+    info = {
+        "type": "service_account", "project_id": s["project_id"],
+        "private_key_id": s["private_key_id"],
+        "private_key": s["private_key"].replace("\\n", "\n").strip(),
+        "client_email": s["client_email"], "client_id": s["client_id"],
+        "auth_uri": s["auth_uri"], "token_uri": s["token_uri"],
+        "auth_provider_x509_cert_url": s["auth_provider_x509_cert_url"],
+        "client_x509_cert_url": s["client_x509_cert_url"]
+    }
+    creds = service_account.Credentials.from_service_account_info(info, scopes=["https://www.googleapis.com/auth/spreadsheets"])
+    return build("sheets", "v4", credentials=creds, cache_discovery=False)
 
-def carregar_dados_adm():
+def carregar_dados():
     service = conectar_sheets()
-    if service:
-        url = st.secrets["connections"]["gsheets"]["spreadsheet"]
-        id_planilha = url.split("/d/")[1].split("/")[0]
-        result = service.spreadsheets().values().get(spreadsheetId=id_planilha, range="A1:G1000").execute()
-        values = result.get('values', [])
-        if values:
-            return pd.DataFrame(values[1:], columns=values[0])
-    return None
+    url = st.secrets["connections"]["gsheets"]["spreadsheet"]
+    sheet_id = url.split("/d/")[1].split("/")[0]
+    result = service.spreadsheets().values().get(spreadsheetId=sheet_id, range="A1:G1000").execute()
+    values = result.get('values', [])
+    return pd.DataFrame(values[1:], columns=values[0]) if values else None
 
 def salvar_lead(dados):
     service = conectar_sheets()
-    if service:
-        url = st.secrets["connections"]["gsheets"]["spreadsheet"]
-        id_planilha = url.split("/d/")[1].split("/")[0]
-        service.spreadsheets().values().append(
-            spreadsheetId=id_planilha, range="A1", valueInputOption="RAW",
-            insertDataOption="INSERT_ROWS", body={"values": [dados]}
-        ).execute()
-        return True
-    return False
+    url = st.secrets["connections"]["gsheets"]["spreadsheet"]
+    sheet_id = url.split("/d/")[1].split("/")[0]
+    service.spreadsheets().values().append(
+        spreadsheetId=sheet_id, range="A1", valueInputOption="RAW",
+        insertDataOption="INSERT_ROWS", body={"values": [dados]}
+    ).execute()
+    return True
 
-# --- BARRA LATERAL ---
+# --- SIDEBAR (ADM e Fachada Lateral) ---
 with st.sidebar:
-    path_logo_side = os.path.join("imagens", "logo.png")
-    if os.path.exists(path_logo_side):
-        st.image(path_logo_side, width=150)
-    st.markdown("### 🏢 Unidade 122")
-    st.info("Portal de captação de interesse para novos treinamentos.")
+    path_fachada_side = os.path.join("imagens", "fachada.png")
+    if os.path.exists(path_fachada_side):
+        st.image(path_fachada_side, caption="Unidade 122")
     
     st.markdown("---")
     with st.expander("🔐 Área Administrativa"):
         senha_input = st.text_input("Senha", type="password")
-        # Comparação com o segredo criptografado nos Secrets
         if senha_input == st.secrets["admin_password"]:
             st.success("Acesso Liberado")
-            ver_relatorio = st.checkbox("Visualizar Tabela de Leads")
+            ver_leads = st.checkbox("Visualizar Relatório de Leads")
         else:
-            ver_relatorio = False
+            ver_leads = False
 
-# --- TELA PRINCIPAL ---
+# --- CONTEÚDO PRINCIPAL ---
 
-# 1. Tarja Vermelha
-st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Registro de Interesse Profissional</p></div>', unsafe_allow_html=True)
+# Cabeçalho
+st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse Profissional</p></div>', unsafe_allow_html=True)
 
-# 2. Imagem da Fachada (Abaixo da tarja)
-path_fachada = os.path.join("imagens", "fachada.jpg")
-if os.path.exists(path_fachada):
-    st.image(path_fachada, use_column_width=True, caption="Unidade 122 - Guarulhos")
+# Imagem da Fachada Principal (Restaurada abaixo da tarja)
+path_fachada_main = os.path.join("imagens", "fachada.jpg")
+if os.path.exists(path_fachada_main):
+    st.image(path_fachada_main, use_container_width=True)
 
-# 3. Lógica do Relatório ADM (Se ativado na lateral)
-if ver_relatorio:
+# Exibição do Relatório (Tabela ADM)
+if ver_leads:
     st.markdown("### 📊 Relatório de Interessados")
-    df = carregar_dados_adm()
+    df = carregar_dados()
     if df is not None:
         st.dataframe(df, use_container_width=True)
     else:
-        st.error("Não foi possível carregar os dados da planilha.")
+        st.warning("Nenhum dado encontrado na planilha.")
     st.markdown("---")
 
-# 4. Formulário
+# Formulário
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    st.markdown("<br><h4 style='text-align: center; color: #333;'>Cadastro de Candidato</h4>", unsafe_allow_html=True)
+    st.markdown("<br><h4 style='text-align: center;'>Cadastro de Interessado</h4>", unsafe_allow_html=True)
     
-    area_sel = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(DADOS_CURSOS_LOCAL.keys())))
-    lista_c = sorted(DADOS_CURSOS_LOCAL[area_sel]) if area_sel != "Selecione..." else []
-    curso_sel = st.selectbox("Curso de Interesse:", ["Aguardando Área..."] + lista_c, disabled=(area_sel == "Selecione..."))
+    area = st.selectbox("Selecione a Área:", ["Selecione..."] + sorted(list(DADOS_CURSOS_LOCAL.keys())))
+    lista = sorted(DADOS_CURSOS_LOCAL[area]) if area != "Selecione..." else []
+    curso = st.selectbox("Selecione o Curso:", ["Aguardando Área..."] + lista, disabled=(area == "Selecione..."))
 
-    with st.form("form_registro", clear_on_submit=True):
+    with st.form("registro_form", clear_on_submit=True):
         nome = st.text_input("Nome Completo")
         email = st.text_input("E-mail")
         whats = st.text_input("WhatsApp")
-        obs = st.text_area("Observações Adicionais")
-        enviar = st.form_submit_button("REGISTRAR INTERESSE")
+        obs = st.text_area("Dúvidas ou Observações")
+        submit = st.form_submit_button("REGISTRAR INTERESSE")
 
-        if enviar:
-            if area_sel != "Selecione..." and nome and email and curso_sel != "Aguardando Área...":
+        if submit:
+            if area != "Selecione..." and nome and email and curso != "Aguardando Área...":
                 data_h = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                if salvar_lead([nome, email, f"'{whats}", area_sel, curso_sel, obs, data_h]):
-                    st.success(f"Registro realizado com sucesso, {nome}!")
+                if salvar_lead([nome, email, f"'{whats}", area, curso, obs, data_h]):
+                    st.success(f"Obrigado pelo registro, {nome}!")
                     st.info("✅ Entraremos em contato com você assim que houver turmas abertas para o curso selecionado.")
                     st.balloons()
-                else:
-                    st.error("Erro ao salvar dados. Verifique a planilha.")
-            else:
-                st.warning("Preencha todos os campos antes de enviar.")
+                else: st.error("Erro ao salvar. Tente novamente.")
+            else: st.warning("Preencha todos os campos obrigatórios.")
 
-# --- RODAPÉ ---
+# Rodapé
 st.markdown('<div class="footer-custom">Copyright 2026 © SENAI Guarulhos 122 - Ricardo IT Master</div>', unsafe_allow_html=True)
