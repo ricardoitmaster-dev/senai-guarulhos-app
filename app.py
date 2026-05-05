@@ -17,7 +17,7 @@ def get_base64_of_bin_file(bin_file):
         return base64.b64encode(data).decode()
     return ""
 
-# --- CSS: ESTILO 3D E MOLDURAS AJUSTADAS ---
+# --- CSS: ESTILO 3D, MOLDURAS E RODAPÉ PADRÃO SENAI ---
 st.markdown("""
     <style>
     .stApp { background-color: #e0e5ec; }
@@ -27,9 +27,8 @@ st.markdown("""
         display: flex; justify-content: center; padding-top: 10px; 
     }
     
-    /* Moldura 3D que se ajusta EXATAMENTE ao tamanho da imagem (Efeito Neumórfico) */
     .moldura-3d-ajustada {
-        display: inline-block; /* Crucial: faz a borda envolver apenas a imagem */
+        display: inline-block;
         border-radius: 25px;
         box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff;
         border: 4px solid #e0e5ec;
@@ -46,19 +45,43 @@ st.markdown("""
     }
     .header-senai h1 { font-size: 28px !important; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-weight: 800; color: white !important; }
     
-    label, [data-testid="stWidgetLabel"] p { color: #000000 !important; font-weight: 600 !important; }
+    /* ESTILIZAÇÃO DO RODAPÉ PADRÃO SENAI-SP */
+    .footer-container {
+        width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;
+        margin-top: 50px; font-family: sans-serif;
+    }
+    .footer-top {
+        background-color: #f4f4f4; padding: 15px 0; text-align: center;
+        display: flex; justify-content: center; gap: 20px; font-size: 12px; font-weight: bold; color: #444;
+    }
+    .footer-social {
+        background-color: #ff0000; padding: 15px 0; text-align: center; color: white;
+        display: flex; justify-content: center; gap: 25px; font-size: 20px;
+    }
+    .footer-content {
+        background-color: #b5121b; padding: 40px 10% 20px 10%; color: white;
+        display: grid; grid-template-columns: 1fr 1fr; gap: 50px;
+    }
+    .footer-bottom {
+        background-color: #b5121b; padding: 20px 0; border-top: 1px solid rgba(255,255,255,0.2);
+        display: flex; justify-content: center; gap: 30px; font-size: 13px; font-weight: bold;
+    }
+    .footer-content h4 { font-size: 16px; margin-bottom: 10px; text-transform: uppercase; }
+    .footer-content p { font-size: 14px; margin: 2px 0; opacity: 0.9; }
     
+    /* Estilos do Formulário */
+    label, [data-testid="stWidgetLabel"] p { color: #000000 !important; font-weight: 600 !important; }
     div.stButton > button { 
         background-color: #ff0000 !important; color: #ffffff !important; font-weight: bold !important; 
         height: 55px !important; border-radius: 15px !important; width: 100% !important; border: none !important;
         box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff !important;
     }
-    
     [data-testid="stForm"] { 
         background-color: #e0e5ec !important; border-radius: 30px !important; padding: 2rem !important; 
         box-shadow: inset 8px 8px 16px #bebebe, inset -8px -8px 16px #ffffff !important; border: none !important; 
     }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     """, unsafe_allow_html=True)
 
 # --- DADOS DOS CURSOS ---
@@ -112,15 +135,15 @@ def ler_todos_leads():
 path_logo = os.path.join("imagens", "logo.png")
 path_fachada = os.path.join("imagens", "fachada.jpg")
 
-# 1. Logo com 3D (Ajustada)
+# 1. Logo
 if os.path.exists(path_logo):
     logo_base = get_base64_of_bin_file(path_logo)
     st.markdown(f'<div class="logo-container"><div class="moldura-3d-ajustada"><img src="data:image/png;base64,{logo_base}" width="150"></div></div>', unsafe_allow_html=True)
 
-# 2. Cabeçalho Vermelho
+# 2. Cabeçalho
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse Profissional</p></div>', unsafe_allow_html=True)
 
-# 3. Fachada (CORRETA: No lugar da antiga, sem sobra cinza e sem duplicidade)
+# 3. Fachada Ajustada
 if os.path.exists(path_fachada):
     fachada_base = get_base64_of_bin_file(path_fachada)
     st.markdown(f'''
@@ -131,7 +154,7 @@ if os.path.exists(path_fachada):
         </div>
     ''', unsafe_allow_html=True)
 
-# --- FORMULÁRIO DE CADASTRO ---
+# --- FORMULÁRIO ---
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     area_sel = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(DADOS_CURSOS.keys())))
@@ -149,11 +172,50 @@ with col2:
             if area_sel != "Selecione..." and nome and email:
                 data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 if salvar_novo_lead([nome, email, f"'{whats}", area_sel, curso_sel, obs, data_atual]):
-                    st.success(f"Excelente, {nome}! Registramos seu interesse no curso de {curso_sel}.")
-                    st.info("Nossa equipe entrará em contato assim que as inscrições forem abertas.")
+                    st.success(f"Excelente, {nome}! Registramos seu interesse.")
                     st.balloons()
-                else: st.error("Erro ao salvar dados.")
+                else: st.error("Erro ao salvar.")
             else: st.error("Preencha os campos obrigatórios.")
+
+# --- RODAPÉ PADRÃO SENAI (Baseado na imagem enviada) ---
+st.markdown("""
+    <div class="footer-container">
+        <div class="footer-top">
+            <span>FALE CONOSCO</span>
+            <span>TRABALHE CONOSCO</span>
+            <span>OUVIDORIA</span>
+            <span>POLÍTICA DE PRIVACIDADE</span>
+            <span>A LGPD NO SENAI-SP</span>
+        </div>
+        <div class="footer-social">
+            <i class="fab fa-facebook-f"></i>
+            <i class="fab fa-twitter"></i>
+            <i class="fab fa-youtube"></i>
+            <i class="fab fa-linkedin-in"></i>
+            <i class="fab fa-instagram"></i>
+            <i class="fab fa-whatsapp"></i>
+        </div>
+        <div class="footer-content">
+            <div>
+                <h4>EDIFÍCIO SEDE FIESP</h4>
+                <p>Av. Paulista, 1313, São Paulo/SP</p>
+                <p>CEP 01311-923</p>
+            </div>
+            <div>
+                <h4>CENTRAL DE RELACIONAMENTO</h4>
+                <p>(11) 3322-0050 (Telefone/WhatsApp)</p>
+                <p>0800-055-1000 (Interior de SP, somente telefone fixo)</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>O SENAI</span>
+            <span>PERGUNTAS FREQUENTES</span>
+            <span>FALE CONOSCO</span>
+            <span>TRANSPARÊNCIA</span>
+            <span>PARA A SUA EMPRESA</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # --- ÁREA ADMINISTRATIVA ---
 with st.sidebar:
@@ -161,10 +223,6 @@ with st.sidebar:
     st.subheader("🔒 Área Administrativa")
     senha_mestra = st.secrets["auth"]["admin_password"] if "auth" in st.secrets else None
     senha_digitada = st.text_input("Senha", type="password")
-
-    if senha_digitada and senha_mestra and senha_digitada == senha_mestra:
-        st.success("Acesso Liberado")
+    if senha_digitada == senha_mestra:
         if st.checkbox("Ver Leads"):
-            df = ler_todos_leads()
-            if not df.empty:
-                st.dataframe(df)
+            st.dataframe(ler_todos_leads())
