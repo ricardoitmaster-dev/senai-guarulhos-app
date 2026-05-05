@@ -35,6 +35,7 @@ st.markdown("""
         border: 4px solid #e0e5ec;
         overflow: hidden;
         line-height: 0;
+        margin: 20px auto;
     }
     .img-3d-ajustada img { border-radius: 20px; display: block; max-width: 100%; height: auto; }
 
@@ -60,7 +61,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- DADOS DOS CURSOS (Sua Base Local) ---
+# --- DADOS DOS CURSOS ---
 DADOS_CURSOS = {
     "Tecnologia da Informação": ["EXCEL BÁSICO", "INFORMÁTICA BÁSICA", "EXCEL COMPLETO", "PYTHON PARA ANÁLISE DE DADOS", "POWER BI (DASHBOARDS)"],
     "Metalmecânica": ["MECÂNICO DE USINAGEM", "PROGRAMADOR CNC", "SOLDADOR MAG/TIG"],
@@ -116,14 +117,14 @@ if os.path.exists(path_logo):
     logo_base = get_base64_of_bin_file(path_logo)
     st.markdown(f'<div class="logo-container"><div class="img-3d-ajustada"><img src="data:image/png;base64,{logo_base}" width="150"></div></div>', unsafe_allow_html=True)
 
-# 2. Cabeçalho
+# 2. Cabeçalho Vermelho
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse Profissional</p></div>', unsafe_allow_html=True)
 
-# 3. Fachada Ajustada (Ocupa a moldura inteira)
+# 3. Fachada CORRETA (Apenas esta exibição abaixo do cabeçalho)
 if os.path.exists(path_fachada):
     fachada_base = get_base64_of_bin_file(path_fachada)
     st.markdown(f'''
-        <div style="text-align:center; padding: 20px;">
+        <div style="text-align:center;">
             <div class="img-3d-ajustada">
                 <img src="data:image/jpeg;base64,{fachada_base}" style="width: 750px;">
             </div>
@@ -166,36 +167,4 @@ with st.sidebar:
         if st.checkbox("Ver Leads"):
             df = ler_todos_leads()
             if not df.empty:
-                st.dataframe(df)# No seu CSS, substitua ou adicione estas linhas:
-
-st.markdown("""
-    <style>
-    /* Ajuste para que a moldura 3D envolva a imagem sem sobras */
-    .moldura-fachada-ajustada {
-        display: inline-block; /* Faz a caixa ter o tamanho exato do conteúdo */
-        border-radius: 25px;
-        box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff; /* O efeito 3D */
-        border: 4px solid #e0e5ec;
-        line-height: 0; /* Remove espaços vazios na base da imagem */
-        overflow: hidden;
-    }
-    
-    .moldura-fachada-ajustada img {
-        width: 100%; /* A imagem ocupa todo o espaço da moldura */
-        max-width: 800px; /* Você pode controlar o tamanho máximo aqui */
-        height: auto;
-        display: block;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-# E na parte onde você exibe a fachada:
-if os.path.exists(path_fachada):
-    fachada_base = get_base64_of_bin_file(path_fachada)
-    st.markdown(f'''
-        <div style="text-align:center; padding: 20px;">
-            <div class="moldura-fachada-ajustada">
-                <img src="data:image/jpeg;base64,{fachada_base}">
-            </div>
-        </div>
-    ''', unsafe_allow_html=True)
+                st.dataframe(df)
