@@ -9,7 +9,7 @@ from googleapiclient.discovery import build
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- FUNÇÃO DE LIMPEZA TOTAL (CORRIGIDA) ---
+# --- FUNÇÃO DE LIMPEZA TOTAL ---
 def reset_geral_callback():
     for key in st.session_state.keys():
         del st.session_state[key]
@@ -27,34 +27,14 @@ st.markdown("""
     <style>
     .stApp { background-color: #e0e5ec; }
     .logo-container { position: relative; z-index: 10; margin-bottom: -20px; display: flex; justify-content: center; padding-top: 10px; }
-    
-    /* MOLDURA 3D AJUSTADA PARA 100% DE LARGURA */
-    .moldura-3d-ajustada { 
-        display: block; 
-        border-radius: 25px; 
-        box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff; 
-        border: 4px solid #e0e5ec; 
-        overflow: hidden; 
-        margin: 25px auto; 
-        width: 100%; 
-    }
-    
-    /* IMAGEM PREENCHENDO TODO O CONTAINER */
-    .moldura-3d-ajustada img { 
-        border-radius: 20px; 
-        display: block; 
-        width: 100%; 
-        height: auto; 
-    }
-
+    .moldura-3d-ajustada { display: block; border-radius: 25px; box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff; border: 4px solid #e0e5ec; overflow: hidden; margin: 25px auto; width: 100%; }
+    .moldura-3d-ajustada img { border-radius: 20px; display: block; width: 100%; height: auto; }
     .header-senai { background: #ff0000; padding: 40px 0px 25px 0px; color: white; text-align: center; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; z-index: 5; box-shadow: 0px 10px 15px rgba(0,0,0,0.1); border-bottom: 4px solid #cc0000; }
     .header-senai h1 { font-size: 28px !important; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-weight: 800; color: white !important; }
     
-    /* RODAPÉ E LINKS */
     .footer-container { width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; margin-top: 50px; font-family: sans-serif; }
     .footer-container a { text-decoration: none !important; color: inherit !important; }
     .footer-container a:hover { opacity: 0.8 !important; }
-    
     .footer-top { background-color: #f4f4f4; padding: 15px 0; text-align: center; display: flex; justify-content: center; gap: 20px; font-size: 12px; font-weight: bold; color: #444; }
     .footer-social { background-color: #ff0000; padding: 15px 0; text-align: center; color: white; display: flex; justify-content: center; gap: 25px; font-size: 20px; }
     .footer-content { background-color: #b5121b; padding: 40px 10% 20px 10%; color: white; display: grid; grid-template-columns: 1fr 1fr; gap: 50px; }
@@ -67,9 +47,24 @@ st.markdown("""
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     """, unsafe_allow_html=True)
 
-# --- DADOS ---
+# --- DADOS ATUALIZADOS ---
 DADOS_CURSOS = {
-    "Tecnologia da Informação": ["EXCEL BÁSICO", "INFORMÁTICA BÁSICA", "EXCEL COMPLETO", "PYTHON PARA ANÁLISE DE DADOS", "POWER BI (DASHBOARDS)"],
+    "Tecnologia da Informação": [
+        "EXCEL BÁSICO", 
+        "EXCEL COMPLETO", 
+        "EXCEL AVANÇADO",
+        "INFORMÁTICA BÁSICA", 
+        "PYTHON PARA ANÁLISE DE DADOS", 
+        "FUNDAMENTOS EM PYTHON",
+        "POWER BI (DASHBOARDS)",
+        "IMPLANTAÇÃO DE SERVIÇOS DE INTELIGÊNCIA ARTIFICIAL GENERATIVA EM NUVEM – GOOGLE CLOUD", 
+        "INTELIGÊNCIA ARTIFICIAL APLICADO À DETECÇÃO DE ANOMALIAS EM MÁQUINAS", 
+        "INTELIGÊNCIA ARTIFICIAL NA PROGRAMAÇÃO CNC", 
+        "INTELIGÊNCIA ARTIFICIAL NO MONITORAMENTO DA MANUTENÇÃO PREDITIVA", 
+        "INTELIGÊNCIAS ARTIFICIAIS GENERATIVAS APLICADA A PROGRAMAÇÃO - CHATGPT", 
+        "MARKETING DIGITAL COM INTELIGÊNCIA ARTIFICIAL", 
+        "PROGRAMAÇÃO EM INTELIGÊNCIA ARTIFICIAL GENERATIVA"
+    ],
     "Metalmecânica": ["MECÂNICO DE USINAGEM", "PROGRAMADOR CNC", "SOLDADOR MAG/TIG"],
     "Eletroeletrônica": ["ELETRICISTA INSTALADOR", "COMANDOS ELÉTRICOS", "SISTEMAS FOTOVOLTAICOS"],
     "Gestão e Logística": ["ALMOXARIFE", "ASSISTENTE ADMINISTRATIVO", "LOGÍSTICA INTEGRADA"]
@@ -120,14 +115,12 @@ path_fachada = os.path.join("imagens", "fachada.jpg")
 
 if os.path.exists(path_logo):
     logo_base = get_base64_of_bin_file(path_logo)
-    # Logo centralizado com moldura fixa
     st.markdown(f'<div class="logo-container"><div class="moldura-3d-ajustada" style="width:150px;"><img src="data:image/png;base64,{logo_base}"></div></div>', unsafe_allow_html=True)
 
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse Profissional</p></div>', unsafe_allow_html=True)
 
 if os.path.exists(path_fachada):
     fachada_base = get_base64_of_bin_file(path_fachada)
-    # Fachada ocupando a largura total disponível
     st.markdown(f'<div class="moldura-3d-ajustada"><img src="data:image/jpeg;base64,{fachada_base}"></div>', unsafe_allow_html=True)
 
 col1, col2, col3 = st.columns([1, 2, 1])
@@ -205,6 +198,6 @@ with st.sidebar:
         if st.checkbox("Ver Leads"):
             st.dataframe(ler_todos_leads())
         
-        # Correção do Erro da imagem: Callback apenas para deletar, rerun fora.
+        # Correção do Erro: st.rerun() chamado fora do callback
         if st.button("Sair / Limpar Tudo", on_click=reset_geral_callback):
             st.rerun()
