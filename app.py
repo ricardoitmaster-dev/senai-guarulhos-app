@@ -27,17 +27,17 @@ st.markdown("""
         display: flex; justify-content: center; padding-top: 10px; 
     }
     
-    /* Moldura 3D que se ajusta EXATAMENTE ao tamanho da imagem */
-    .img-3d-ajustada {
-        display: inline-block;
+    /* Moldura 3D que se ajusta EXATAMENTE ao tamanho da imagem (Efeito Neumórfico) */
+    .moldura-3d-ajustada {
+        display: inline-block; /* Crucial: faz a borda envolver apenas a imagem */
         border-radius: 25px;
         box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff;
         border: 4px solid #e0e5ec;
         overflow: hidden;
         line-height: 0;
-        margin: 20px auto;
+        margin: 25px auto;
     }
-    .img-3d-ajustada img { border-radius: 20px; display: block; max-width: 100%; height: auto; }
+    .moldura-3d-ajustada img { border-radius: 20px; display: block; max-width: 100%; height: auto; }
 
     .header-senai { 
         background: #ff0000; padding: 40px 0px 25px 0px; color: white; text-align: center; 
@@ -112,20 +112,20 @@ def ler_todos_leads():
 path_logo = os.path.join("imagens", "logo.png")
 path_fachada = os.path.join("imagens", "fachada.jpg")
 
-# 1. Logo com 3D
+# 1. Logo com 3D (Ajustada)
 if os.path.exists(path_logo):
     logo_base = get_base64_of_bin_file(path_logo)
-    st.markdown(f'<div class="logo-container"><div class="img-3d-ajustada"><img src="data:image/png;base64,{logo_base}" width="150"></div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="logo-container"><div class="moldura-3d-ajustada"><img src="data:image/png;base64,{logo_base}" width="150"></div></div>', unsafe_allow_html=True)
 
 # 2. Cabeçalho Vermelho
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse Profissional</p></div>', unsafe_allow_html=True)
 
-# 3. Fachada CORRETA (Apenas esta exibição abaixo do cabeçalho)
+# 3. Fachada (CORRETA: No lugar da antiga, sem sobra cinza e sem duplicidade)
 if os.path.exists(path_fachada):
     fachada_base = get_base64_of_bin_file(path_fachada)
     st.markdown(f'''
         <div style="text-align:center;">
-            <div class="img-3d-ajustada">
+            <div class="moldura-3d-ajustada">
                 <img src="data:image/jpeg;base64,{fachada_base}" style="width: 750px;">
             </div>
         </div>
@@ -152,7 +152,7 @@ with col2:
                     st.success(f"Excelente, {nome}! Registramos seu interesse no curso de {curso_sel}.")
                     st.info("Nossa equipe entrará em contato assim que as inscrições forem abertas.")
                     st.balloons()
-                else: st.error("Erro ao salvar.")
+                else: st.error("Erro ao salvar dados.")
             else: st.error("Preencha os campos obrigatórios.")
 
 # --- ÁREA ADMINISTRATIVA ---
