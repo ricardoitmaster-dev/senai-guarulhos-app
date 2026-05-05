@@ -10,11 +10,13 @@ from googleapiclient.discovery import build
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- FUNÇÃO DE LIMPEZA TOTAL ---
+# --- FUNÇÃO DE LIMPEZA TOTAL (RESET DE WIDGETS) ---
 def reset_geral_callback():
-    # Limpa o session_state. O Streamlit recarrega a página automaticamente após o callback.
+    # Limpa todos os valores do session_state
     for key in list(st.session_state.keys()):
         del st.session_state[key]
+    # O Streamlit recarregará a página automaticamente após o callback, 
+    # voltando os widgets para os valores padrão (index=0 ou vazio).
 
 # Função para converter imagem local em base64
 def get_base64_of_bin_file(bin_file):
@@ -52,7 +54,6 @@ st.markdown("""
     }
     .btn-whatsapp:hover { background-color: #128C7E !important; transform: scale(1.02); }
 
-    /* ESTILO DO RODAPÉ RESTAURADO */
     .footer-container { width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; margin-top: 50px; font-family: sans-serif; }
     .footer-container a { text-decoration: none !important; color: inherit !important; }
     .footer-top { background-color: #f4f4f4; padding: 15px 0; text-align: center; display: flex; justify-content: center; gap: 20px; font-size: 12px; font-weight: bold; color: #444; }
@@ -143,9 +144,12 @@ if os.path.exists(path_fachada):
 
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    area_sel = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(DADOS_CURSOS.keys())), key="area_input")
-    opcoes = sorted(DADOS_CURSOS[area_sel]) if area_sel != "Selecione..." else []
-    curso_sel = st.selectbox("Curso:", ["Aguardando área..."] + opcoes, disabled=(area_sel == "Selecione..."), key="curso_input")
+    # AREA PROFISSIONAL: Agora resetável via callback
+    opcoes_areas = ["Selecione..."] + sorted(list(DADOS_CURSOS.keys()))
+    area_sel = st.selectbox("Área Profissional:", opcoes_areas, key="area_input")
+    
+    opcoes_cursos = sorted(DADOS_CURSOS[area_sel]) if area_sel != "Selecione..." else []
+    curso_sel = st.selectbox("Curso:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_sel == "Selecione..."), key="curso_input")
 
     with st.form("form_registro", clear_on_submit=True):
         nome = st.text_input("Nome Completo", key="nome_input")
@@ -169,7 +173,7 @@ with col2:
                 else: st.error("Erro ao salvar.")
             else: st.error("Preencha todos os campos.")
 
-# --- RODAPÉ INTEGRAL RESTAURADO ---
+# --- RODAPÉ INTEGRAL ---
 footer_html = """
 <div class="footer-container">
     <div class="footer-top">
@@ -207,7 +211,11 @@ st.markdown(footer_html, unsafe_allow_html=True)
 with st.sidebar:
     st.markdown("---")
     st.subheader("🔒 Área Administrativa")
+    
+    # Obtém senha do secrets
     senha_mestra = st.secrets["auth"]["admin_password"] if "auth" in st.secrets else ""
+    
+    # SENHA: O campo agora limpa pois o session_state['senha_admin'] é deletado no callback
     senha_digitada = st.text_input("Senha", type="password", key="senha_admin")
 
     if senha_digitada == senha_mestra and senha_mestra != "":
@@ -215,4 +223,5 @@ with st.sidebar:
         if st.checkbox("Ver Leads"):
             st.dataframe(ler_todos_leads())
         
+        # Botão que dispara a limpeza total
         st.button("Sair / Limpar Tudo", on_click=reset_geral_callback)
