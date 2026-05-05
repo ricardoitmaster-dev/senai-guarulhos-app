@@ -18,11 +18,27 @@ def get_base64_of_bin_file(bin_file):
         return base64.b64encode(data).decode()
     return ""
 
-# --- CSS: ESTILO 3D E AJUSTE DA MOLDURA DA FACHADA ---
+# --- CSS: ESTILO 3D, FAIXA TOTAL E MOLDURAS JUSTAS ---
 st.markdown("""
     <style>
     .stApp { background-color: #e0e5ec; }
-    .logo-container { position: relative; z-index: 10; margin-bottom: -20px; display: flex; justify-content: center; padding-top: 10px; }
+    
+    .logo-container { 
+        position: relative; z-index: 10; margin-bottom: -20px; 
+        display: flex; justify-content: center; padding-top: 10px; 
+    }
+    
+    /* Efeito 3D para Logo e Fachada */
+    .img-3d-link {
+        display: inline-block;
+        border-radius: 25px;
+        box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff;
+        border: 4px solid #e0e5ec;
+        overflow: hidden;
+        line-height: 0;
+    }
+    .img-3d-link img { border-radius: 20px; display: block; }
+
     .header-senai { 
         background: #ff0000; padding: 40px 0px 25px 0px; color: white; text-align: center; 
         width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;
@@ -30,23 +46,14 @@ st.markdown("""
     }
     .header-senai h1 { font-size: 28px !important; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-weight: 800; color: white !important; }
     
-    /* Moldura da Fachada Justa */
-    .moldura-fachada {
-        display: inline-block;
-        padding: 10px;
-        background: #e0e5ec;
-        border-radius: 25px;
-        box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff;
-        margin: 20px auto;
-    }
-    .moldura-fachada img { border-radius: 20px; display: block; max-width: 100%; height: auto; }
-
     label, [data-testid="stWidgetLabel"] p { color: #000000 !important; font-weight: 600 !important; }
+    
     div.stButton > button { 
         background-color: #ff0000 !important; color: #ffffff !important; font-weight: bold !important; 
         height: 55px !important; border-radius: 15px !important; width: 100% !important; border: none !important;
         box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff !important;
     }
+    
     [data-testid="stForm"] { 
         background-color: #e0e5ec !important; border-radius: 30px !important; padding: 2rem !important; 
         box-shadow: inset 8px 8px 16px #bebebe, inset -8px -8px 16px #ffffff !important; border: none !important; 
@@ -62,7 +69,7 @@ DADOS_CURSOS = {
     "Gestão e Logística": ["ALMOXARIFE", "ASSISTENTE ADMINISTRATIVO", "LOGÍSTICA INTEGRADA"]
 }
 
-# --- FUNÇÕES GOOGLE SHEETS ---
+# --- FUNÇÕES GOOGLE SHEETS (Mantidas Integralmente) ---
 def conectar_google_sheets():
     try:
         s = st.secrets["connections"]["gsheets"]
@@ -105,19 +112,35 @@ def ler_todos_leads():
 path_logo = os.path.join("imagens", "logo.png")
 path_fachada = os.path.join("imagens", "fachada.jpg")
 
+# 1. Logo com 3D e Borda
 if os.path.exists(path_logo):
     logo_base = get_base64_of_bin_file(path_logo)
-    st.markdown(f'<div class="logo-container"><img src="data:image/png;base64,{logo_base}" width="150"></div>', unsafe_allow_html=True)
+    st.markdown(f'''
+        <div class="logo-container">
+            <div class="img-3d-link">
+                <img src="data:image/png;base64,{logo_base}" width="150">
+            </div>
+        </div>
+    ''', unsafe_allow_html=True)
 
+# 2. Faixa
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse Profissional</p></div>', unsafe_allow_html=True)
 
+# 3. Fachada com 3D Justo (Sem janela gigante)
 if os.path.exists(path_fachada):
     fachada_base = get_base64_of_bin_file(path_fachada)
-    st.markdown(f'<div style="text-align:center;"><div class="moldura-fachada"><img src="data:image/jpeg;base64,{fachada_base}" style="width: 700px;"></div></div>', unsafe_allow_html=True)
+    st.markdown(f'''
+        <div style="text-align:center; padding: 20px;">
+            <div class="img-3d-link">
+                <img src="data:image/jpeg;base64,{fachada_base}" style="width: 700px; max-width: 90vw;">
+            </div>
+        </div>
+    ''', unsafe_allow_html=True)
 
 # --- FORMULÁRIO ---
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
+    st.markdown("<h3 style='text-align: center; color: #000000;'>📋 Cadastro de Interesse</h3>", unsafe_allow_html=True)
     area_sel = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(DADOS_CURSOS.keys())))
     opcoes = sorted(DADOS_CURSOS[area_sel]) if area_sel != "Selecione..." else []
     curso_sel = st.selectbox("Curso:", ["Aguardando área..."] + opcoes, disabled=(area_sel == "Selecione..."))
@@ -136,10 +159,10 @@ with col2:
                     st.success(f"Excelente, {nome}! Registramos seu interesse no curso de {curso_sel}.")
                     st.info("Nossa equipe entrará em contato assim que as inscrições forem abertas.")
                     st.balloons()
-                else: st.error("Erro ao salvar.")
-            else: st.error("Preencha os campos obrigatórios.")
+                else: st.error("Erro ao salvar dados.")
+            else: st.error("Por favor, preencha os campos obrigatórios.")
 
-# --- ADMIN (CORRIGIDO) ---
+# --- ADMIN (Painel de Leads Restaurado) ---
 with st.sidebar:
     st.markdown("---")
     st.subheader("🔒 Área Administrativa")
@@ -151,8 +174,9 @@ with st.sidebar:
         if st.checkbox("Ver Leads Cadastrados"):
             df_leads = ler_todos_leads()
             if not df_leads.empty:
+                st.write("### 📊 Relatório de Interessados")
                 st.dataframe(df_leads)
             else:
-                st.info("Nenhum lead encontrado.")
+                st.info("Nenhum registro encontrado na planilha.")
     elif senha_digitada:
         st.error("Senha incorreta")
