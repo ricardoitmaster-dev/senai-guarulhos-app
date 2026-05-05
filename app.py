@@ -36,12 +36,12 @@ st.markdown("""
     /* RODAPÉ E LINKS */
     .footer-container { width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; margin-top: 50px; font-family: sans-serif; }
     .footer-container a { text-decoration: none !important; color: inherit !important; }
-    .footer-container a:hover { opacity: 0.8; }
+    .footer-container a:hover { opacity: 0.8 !important; }
     
     .footer-top { background-color: #f4f4f4; padding: 15px 0; text-align: center; display: flex; justify-content: center; gap: 20px; font-size: 12px; font-weight: bold; color: #444; }
     .footer-social { background-color: #ff0000; padding: 15px 0; text-align: center; color: white; display: flex; justify-content: center; gap: 25px; font-size: 20px; }
     .footer-content { background-color: #b5121b; padding: 40px 10% 20px 10%; color: white; display: grid; grid-template-columns: 1fr 1fr; gap: 50px; }
-    .footer-bottom { background-color: #b5121b; padding: 20px 0; border-top: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: center; gap: 30px; font-size: 13px; font-weight: bold; color: white; }
+    .footer-bottom { background-color: #b5121b; padding: 20px 0; border-top: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: center; gap: 30px; font-size: 13px; font-weight: bold; color: white !important; }
     
     label, [data-testid="stWidgetLabel"] p { color: #000000 !important; font-weight: 600 !important; }
     div.stButton > button { background-color: #ff0000 !important; color: #ffffff !important; font-weight: bold !important; height: 55px !important; border-radius: 15px !important; width: 100% !important; border: none !important; box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff !important; }
@@ -73,7 +73,8 @@ def conectar_google_sheets():
         }
         creds = service_account.Credentials.from_service_account_info(info, scopes=["https://www.googleapis.com/auth/spreadsheets"])
         return build("sheets", "v4", credentials=creds, cache_discovery=False)
-    except: return None
+    except Exception:
+        return None
 
 def salvar_novo_lead(lista_dados):
     try:
@@ -82,7 +83,8 @@ def salvar_novo_lead(lista_dados):
         sheet_id = url.split("/d/")[1].split("/")[0]
         service.spreadsheets().values().append(spreadsheetId=sheet_id, range="A1", valueInputOption="RAW", insertDataOption="INSERT_ROWS", body={"values": [lista_dados]}).execute()
         return True
-    except: return False
+    except Exception:
+        return False
 
 def ler_todos_leads():
     try:
@@ -92,7 +94,8 @@ def ler_todos_leads():
         result = service.spreadsheets().values().get(spreadsheetId=sheet_id, range="A1:Z2000").execute()
         values = result.get("values", [])
         return pd.DataFrame(values[1:], columns=values[0]) if values else pd.DataFrame()
-    except: return pd.DataFrame()
+    except Exception:
+        return pd.DataFrame()
 
 # --- INTERFACE ---
 path_logo = os.path.join("imagens", "logo.png")
@@ -131,51 +134,45 @@ with col2:
             else: st.error("Preencha os campos obrigatórios.")
 
 # --- RODAPÉ COM LINKS OFICIAIS (Fiel ao Site) ---
-st.markdown("""
-    <div class="footer-container">
-        <!-- Faixa Cinza: Links Institucionais -->
-        <div class="footer-top">
-            <a href="https://www.sp.senai.br/fale-conosco" target="_blank">FALE CONOSCO</a>
-            <a href="https://www.sp.senai.br/trabalhe-conosco" target="_blank">TRABALHE CONOSCO</a>
-            <a href="https://www.sp.senai.br/ouvidoria" target="_blank">OUVIDORIA</a>
-            <a href="https://www.sp.senai.br/institucional/politica-de-privacidade" target="_blank">POLÍTICA DE PRIVACIDADE</a>
-            <a href="https://www.sp.senai.br/a-lgpd-no-senai-sp" target="_blank">A LGPD NO SENAI-SP</a>
+footer_html = """
+<div class="footer-container">
+    <div class="footer-top">
+        <a href="https://www.sp.senai.br/fale-conosco" target="_blank">FALE CONOSCO</a>
+        <a href="https://www.sp.senai.br/trabalhe-conosco" target="_blank">TRABALHE CONOSCO</a>
+        <a href="https://www.sp.senai.br/ouvidoria" target="_blank">OUVIDORIA</a>
+        <a href="https://www.sp.senai.br/institucional/politica-de-privacidade" target="_blank">POLÍTICA DE PRIVACIDADE</a>
+        <a href="https://www.sp.senai.br/a-lgpd-no-senai-sp" target="_blank">A LGPD NO SENAI-SP</a>
+    </div>
+    <div class="footer-social">
+        <a href="https://www.facebook.com/senaisp" target="_blank"><i class="fab fa-facebook-f"></i></a>
+        <a href="https://twitter.com/senaisp" target="_blank"><i class="fab fa-twitter"></i></a>
+        <a href="https://www.youtube.com/senaisp" target="_blank"><i class="fab fa-youtube"></i></a>
+        <a href="https://www.linkedin.com/school/senai-sp/" target="_blank"><i class="fab fa-linkedin-in"></i></a>
+        <a href="https://www.instagram.com/senaisp/" target="_blank"><i class="fab fa-instagram"></i></a>
+        <a href="https://api.whatsapp.com/send?phone=551133220050" target="_blank"><i class="fab fa-whatsapp"></i></a>
+    </div>
+    <div class="footer-content">
+        <div>
+            <h4>EDIFÍCIO SEDE FIESP</h4>
+            <p>Av. Paulista, 1313, São Paulo/SP</p>
+            <p>CEP 01311-923</p>
         </div>
-        
-        <!-- Faixa Vermelha: Redes Sociais -->
-        <div class="footer-social">
-            <a href="https://www.facebook.com/senaisp" target="_blank"><i class="fab fa-facebook-f"></i></a>
-            <a href="https://twitter.com/senaisp" target="_blank"><i class="fab fa-twitter"></i></a>
-            <a href="https://www.youtube.com/senaisp" target="_blank"><i class="fab fa-youtube"></i></a>
-            <a href="https://www.linkedin.com/school/senai-sp/" target="_blank"><i class="fab fa-linkedin-in"></i></a>
-            <a href="https://www.instagram.com/senaisp/" target="_blank"><i class="fab fa-instagram"></i></a>
-            <a href="https://api.whatsapp.com/send?phone=551133220050" target="_blank"><i class="fab fa-whatsapp"></i></a>
-        </div>
-        
-        <!-- Bloco Vinho: Endereço e Contato -->
-        <div class="footer-content">
-            <div>
-                <h4>EDIFÍCIO SEDE FIESP</h4>
-                <p>Av. Paulista, 1313, São Paulo/SP</p>
-                <p>CEP 01311-923</p>
-            </div>
-            <div>
-                <h4>CENTRAL DE RELACIONAMENTO</h4>
-                <p><a href="tel:1133220050">(11) 3322-0050</a> (Telefone/WhatsApp)</p>
-                <p><a href="tel:08000551000">0800-055-1000</a> (Interior de SP, somente fixo)</p>
-            </div>
-        </div>
-        
-        <!-- Faixa Inferior: Links Gerais -->
-        <div class="footer-bottom">
-            <a href="https://www.sp.senai.br/o-senai" target="_blank">O SENAI</a>
-            <a href="https://www.sp.senai.br/perguntas-frequentes" target="_blank">PERGUNTAS FREQUENTES</a>
-            <a href="https://www.sp.senai.br/fale-conosco" target="_blank">FALE CONOSCO</a>
-            <a href="https://transparencia.sp.senai.br/" target="_blank">TRANSPARÊNCIA</a>
-            <a href="https://www.sp.senai.br/para-a-sua-empresa" target="_blank">PARA A SUA EMPRESA</a>
+        <div>
+            <h4>CENTRAL DE RELACIONAMENTO</h4>
+            <p><a href="tel:1133220050">(11) 3322-0050</a> (Telefone/WhatsApp)</p>
+            <p><a href="tel:08000551000">0800-055-1000</a> (Interior de SP, somente fixo)</p>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    <div class="footer-bottom">
+        <a href="https://www.sp.senai.br/o-senai" target="_blank">O SENAI</a>
+        <a href="https://www.sp.senai.br/perguntas-frequentes" target="_blank">PERGUNTAS FREQUENTES</a>
+        <a href="https://www.sp.senai.br/fale-conosco" target="_blank">FALE CONOSCO</a>
+        <a href="https://transparencia.sp.senai.br/" target="_blank">TRANSPARÊNCIA</a>
+        <a href="https://www.sp.senai.br/para-a-sua-empresa" target="_blank">PARA A SUA EMPRESA</a>
+    </div>
+</div>
+"""
+st.markdown(footer_html, unsafe_allow_html=True)
 
 # --- ÁREA ADMINISTRATIVA ---
 with st.sidebar:
