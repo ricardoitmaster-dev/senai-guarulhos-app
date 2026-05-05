@@ -10,7 +10,7 @@ from googleapiclient.discovery import build
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- FUNÇÃO DE LIMPEZA TOTAL (CORRIGIDA) ---
+# --- FUNÇÃO DE LIMPEZA TOTAL ---
 def reset_geral_callback():
     # Limpa o session_state. O Streamlit recarrega a página automaticamente após o callback.
     for key in list(st.session_state.keys()):
@@ -52,6 +52,7 @@ st.markdown("""
     }
     .btn-whatsapp:hover { background-color: #128C7E !important; transform: scale(1.02); }
 
+    /* ESTILO DO RODAPÉ RESTAURADO */
     .footer-container { width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; margin-top: 50px; font-family: sans-serif; }
     .footer-container a { text-decoration: none !important; color: inherit !important; }
     .footer-top { background-color: #f4f4f4; padding: 15px 0; text-align: center; display: flex; justify-content: center; gap: 20px; font-size: 12px; font-weight: bold; color: #444; }
@@ -142,7 +143,6 @@ if os.path.exists(path_fachada):
 
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    # Selectboxes com Keys
     area_sel = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(DADOS_CURSOS.keys())), key="area_input")
     opcoes = sorted(DADOS_CURSOS[area_sel]) if area_sel != "Selecione..." else []
     curso_sel = st.selectbox("Curso:", ["Aguardando área..."] + opcoes, disabled=(area_sel == "Selecione..."), key="curso_input")
@@ -169,28 +169,35 @@ with col2:
                 else: st.error("Erro ao salvar.")
             else: st.error("Preencha todos os campos.")
 
-# --- RODAPÉ ---
+# --- RODAPÉ INTEGRAL RESTAURADO ---
 footer_html = """
 <div class="footer-container">
     <div class="footer-top">
         <a href="https://www.sp.senai.br/fale-conosco" target="_blank">FALE CONOSCO</a>
         <a href="https://www.sp.senai.br/trabalhe-conosco" target="_blank">TRABALHE CONOSCO</a>
         <a href="https://www.sp.senai.br/ouvidoria" target="_blank">OUVIDORIA</a>
+        <a href="https://www.sp.senai.br/institucional/politica-de-privacidade" target="_blank">POLÍTICA DE PRIVACIDADE</a>
     </div>
     <div class="footer-social">
         <a href="https://www.facebook.com/senaisp" target="_blank"><i class="fab fa-facebook-f"></i></a>
         <a href="https://www.youtube.com/senaisp" target="_blank"><i class="fab fa-youtube"></i></a>
         <a href="https://www.instagram.com/senaisp/" target="_blank"><i class="fab fa-instagram"></i></a>
+        <a href="https://api.whatsapp.com/send?phone=551133220050" target="_blank"><i class="fab fa-whatsapp"></i></a>
     </div>
     <div class="footer-content">
         <div>
             <h4>CENTRAL DE RELACIONAMENTO</h4>
             <p>(11) 3322-0050 (Telefone/WhatsApp)</p>
+            <p>0800-055-1000 (Interior de SP)</p>
         </div>
         <div>
             <h4>UNIDADE GUARULHOS</h4>
             <p>Rua Antonio de Castro Figueirôa, 225</p>
+            <p>Vila Alzira - Guarulhos/SP</p>
         </div>
+    </div>
+    <div class="footer-bottom">
+        <span>© 2026 SENAI-SP - Unidade 122</span>
     </div>
 </div>
 """
@@ -208,5 +215,4 @@ with st.sidebar:
         if st.checkbox("Ver Leads"):
             st.dataframe(ler_todos_leads())
         
-        # O botão agora chama a função sem o erro de no-op
         st.button("Sair / Limpar Tudo", on_click=reset_geral_callback)
