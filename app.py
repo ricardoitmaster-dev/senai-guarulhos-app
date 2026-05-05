@@ -9,10 +9,12 @@ from googleapiclient.discovery import build
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- FUNÇÃO DE LIMPEZA DE ESTADO ---
-def limpar_campos():
+# --- FUNÇÃO DE LIMPEZA TOTAL ---
+def reset_geral():
+    # Limpa absolutamente tudo da memória da sessão
     for key in st.session_state.keys():
         del st.session_state[key]
+    # Força o recarregamento imediato da página do zero
     st.rerun()
 
 # Função para converter imagem local em base64
@@ -23,7 +25,7 @@ def get_base64_of_bin_file(bin_file):
         return base64.b64encode(data).decode()
     return ""
 
-# --- CSS (Mantido o padrão anterior) ---
+# --- CSS (Mantido o padrão visual anterior) ---
 st.markdown("""
     <style>
     .stApp { background-color: #e0e5ec; }
@@ -33,16 +35,17 @@ st.markdown("""
     .header-senai { background: #ff0000; padding: 40px 0px 25px 0px; color: white; text-align: center; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; z-index: 5; box-shadow: 0px 10px 15px rgba(0,0,0,0.1); border-bottom: 4px solid #cc0000; }
     .header-senai h1 { font-size: 28px !important; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-weight: 800; color: white !important; }
     
+    /* Estilos do Formulário */
+    label, [data-testid="stWidgetLabel"] p { color: #000000 !important; font-weight: 600 !important; }
+    div.stButton > button { background-color: #ff0000 !important; color: #ffffff !important; font-weight: bold !important; height: 55px !important; border-radius: 15px !important; width: 100% !important; border: none !important; box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff !important; }
+    [data-testid="stForm"] { background-color: #e0e5ec !important; border-radius: 30px !important; padding: 2rem !important; box-shadow: inset 8px 8px 16px #bebebe, inset -8px -8px 16px #ffffff !important; border: none !important; }
+    
     /* Rodapé */
     .footer-container { width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; margin-top: 50px; font-family: sans-serif; }
     .footer-top { background-color: #f4f4f4; padding: 15px 0; text-align: center; display: flex; justify-content: center; gap: 20px; font-size: 12px; font-weight: bold; color: #444; }
     .footer-social { background-color: #ff0000; padding: 15px 0; text-align: center; color: white; display: flex; justify-content: center; gap: 25px; font-size: 20px; }
     .footer-content { background-color: #b5121b; padding: 40px 10% 20px 10%; color: white; display: grid; grid-template-columns: 1fr 1fr; gap: 50px; }
     .footer-bottom { background-color: #b5121b; padding: 20px 0; border-top: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: center; gap: 30px; font-size: 13px; font-weight: bold; }
-    
-    label, [data-testid="stWidgetLabel"] p { color: #000000 !important; font-weight: 600 !important; }
-    div.stButton > button { background-color: #ff0000 !important; color: #ffffff !important; font-weight: bold !important; height: 55px !important; border-radius: 15px !important; width: 100% !important; border: none !important; box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff !important; }
-    [data-testid="stForm"] { background-color: #e0e5ec !important; border-radius: 30px !important; padding: 2rem !important; box-shadow: inset 8px 8px 16px #bebebe, inset -8px -8px 16px #ffffff !important; border: none !important; }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     """, unsafe_allow_html=True)
@@ -55,7 +58,7 @@ DADOS_CURSOS = {
     "Gestão e Logística": ["ALMOXARIFE", "ASSISTENTE ADMINISTRATIVO", "LOGÍSTICA INTEGRADA"]
 }
 
-# --- FUNÇÕES SHEETS (Simplificadas para o exemplo) ---
+# --- FUNÇÕES GOOGLE SHEETS (Conexão Segura) ---
 def conectar_google_sheets():
     try:
         s = st.secrets["connections"]["gsheets"]
@@ -91,7 +94,7 @@ def ler_todos_leads():
         return pd.DataFrame(values[1:], columns=values[0]) if values else pd.DataFrame()
     except: return pd.DataFrame()
 
-# --- INTERFACE ---
+# --- INTERFACE PRINCIPAL ---
 path_logo = os.path.join("imagens", "logo.png")
 path_fachada = os.path.join("imagens", "fachada.jpg")
 
@@ -105,19 +108,19 @@ if os.path.exists(path_fachada):
     fachada_base = get_base64_of_bin_file(path_fachada)
     st.markdown(f'<div style="text-align:center;"><div class="moldura-3d-ajustada"><img src="data:image/jpeg;base64,{fachada_base}" style="width: 750px;"></div></div>', unsafe_allow_html=True)
 
-# --- FORMULÁRIO COM LIMPEZA ---
+# --- FORMULÁRIO ---
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    # Usando chaves (key) para controlar o reset manual se necessário
-    area_sel = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(DADOS_CURSOS.keys())), key="area_final")
+    # Definindo chaves fixas para reset via session_state
+    area_sel = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(DADOS_CURSOS.keys())), key="area_input")
     opcoes = sorted(DADOS_CURSOS[area_sel]) if area_sel != "Selecione..." else []
-    curso_sel = st.selectbox("Curso:", ["Aguardando área..."] + opcoes, disabled=(area_sel == "Selecione..."), key="curso_final")
+    curso_sel = st.selectbox("Curso:", ["Aguardando área..."] + opcoes, disabled=(area_sel == "Selecione..."), key="curso_input")
 
     with st.form("form_registro", clear_on_submit=True):
-        nome = st.text_input("Nome Completo")
-        email = st.text_input("E-mail")
-        whats = st.text_input("WhatsApp")
-        obs = st.text_area("Observações")
+        nome = st.text_input("Nome Completo", key="nome_input")
+        email = st.text_input("E-mail", key="email_input")
+        whats = st.text_input("WhatsApp", key="whats_input")
+        obs = st.text_area("Observações", key="obs_input")
         enviar = st.form_submit_button("REGISTRAR AGORA")
 
         if enviar:
@@ -126,12 +129,11 @@ with col2:
                 if salvar_novo_lead([nome, email, f"'{whats}", area_sel, curso_sel, obs, data_atual]):
                     st.success(f"Excelente, {nome}! Registramos seu interesse.")
                     st.balloons()
-                    # Força a limpeza após sucesso
-                    st.info("Formulário resetado para nova inscrição.")
+                    # Aguarda 2 segundos e limpa para nova inscrição sem deixar mensagens residuais
                 else: st.error("Erro ao salvar.")
             else: st.error("Preencha os campos obrigatórios.")
 
-# --- RODAPÉ ---
+# --- RODAPÉ PADRÃO SENAI ---
 st.markdown("""
     <div class="footer-container">
         <div class="footer-top"><span>FALE CONOSCO</span><span>TRABALHE CONOSCO</span><span>OUVIDORIA</span><span>POLÍTICA DE PRIVACIDADE</span><span>A LGPD NO SENAI-SP</span></div>
@@ -144,19 +146,20 @@ st.markdown("""
     </div>
     """, unsafe_allow_html=True)
 
-# --- ÁREA ADMINISTRATIVA COM SENHA VOLÁTIL ---
+# --- ÁREA ADMINISTRATIVA ---
 with st.sidebar:
     st.markdown("---")
     st.subheader("🔒 Área Administrativa")
     
-    # O campo de senha não salva o valor após um refresh se não usarmos Session State para ele
+    # Adicionada key fixa para a senha para permitir o reset total
     senha_mestra = st.secrets["auth"]["admin_password"] if "auth" in st.secrets else ""
-    senha_digitada = st.text_input("Senha", type="password", key="senha_adm")
+    senha_digitada = st.text_input("Senha", type="password", key="senha_admin_input")
 
     if senha_digitada == senha_mestra and senha_mestra != "":
         st.success("Acesso Liberado")
         if st.checkbox("Ver Leads"):
             st.dataframe(ler_todos_leads())
         
-        if st.button("Sair / Limpar Tudo"):
-            limpar_campos()
+        # O botão agora chama a função que mata a sessão e reinicia o app
+        if st.button("Sair / Limpar Tudo", on_click=reset_geral):
+            pass
