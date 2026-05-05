@@ -10,12 +10,11 @@ from googleapiclient.discovery import build
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- FUNÇÃO DE LIMPEZA TOTAL ---
+# --- FUNÇÃO DE LIMPEZA TOTAL (CORRIGIDA) ---
 def reset_geral_callback():
-    # Limpa todo o estado da sessão para garantir que senha e filtros sumam
+    # Limpa o session_state. O Streamlit recarrega a página automaticamente após o callback.
     for key in list(st.session_state.keys()):
         del st.session_state[key]
-    st.rerun()
 
 # Função para converter imagem local em base64
 def get_base64_of_bin_file(bin_file):
@@ -31,7 +30,6 @@ st.markdown("""
     .stApp { background-color: #e0e5ec; }
     .logo-container { position: relative; z-index: 10; margin-bottom: -20px; display: flex; justify-content: center; padding-top: 10px; }
     
-    /* MOLDURA 3D AJUSTADA: Agora com suporte para largura automática */
     .moldura-3d-ajustada { 
         display: block; 
         border-radius: 25px; 
@@ -54,7 +52,6 @@ st.markdown("""
     }
     .btn-whatsapp:hover { background-color: #128C7E !important; transform: scale(1.02); }
 
-    /* RODAPÉ INSTITUCIONAL */
     .footer-container { width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; margin-top: 50px; font-family: sans-serif; }
     .footer-container a { text-decoration: none !important; color: inherit !important; }
     .footer-top { background-color: #f4f4f4; padding: 15px 0; text-align: center; display: flex; justify-content: center; gap: 20px; font-size: 12px; font-weight: bold; color: #444; }
@@ -127,14 +124,12 @@ def ler_todos_leads():
 path_logo = os.path.join("imagens", "logo.png")
 path_fachada = os.path.join("imagens", "fachada.jpg")
 
-# Exibição da Logo
 if os.path.exists(path_logo):
     logo_base = get_base64_of_bin_file(path_logo)
     st.markdown(f'<div class="logo-container"><div class="moldura-3d-ajustada" style="width:150px; margin: 0 auto;"><img src="data:image/png;base64,{logo_base}"></div></div>', unsafe_allow_html=True)
 
 st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse Profissional</p></div>', unsafe_allow_html=True)
 
-# Exibição da Fachada (AJUSTE DE TAMANHO JUSTO SOLICITADO)
 if os.path.exists(path_fachada):
     fachada_base = get_base64_of_bin_file(path_fachada)
     st.markdown(f'''
@@ -147,7 +142,7 @@ if os.path.exists(path_fachada):
 
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    # Selectboxes com Keys para permitir o reset
+    # Selectboxes com Keys
     area_sel = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(DADOS_CURSOS.keys())), key="area_input")
     opcoes = sorted(DADOS_CURSOS[area_sel]) if area_sel != "Selecione..." else []
     curso_sel = st.selectbox("Curso:", ["Aguardando área..."] + opcoes, disabled=(area_sel == "Selecione..."), key="curso_input")
@@ -166,7 +161,6 @@ with col2:
                     st.success(f"Excelente, {nome}! Seu interesse foi registrado.")
                     st.balloons()
                     
-                    # Link WhatsApp
                     numero_destino = "551133220050" 
                     mensagem_texto = f"Olá! Registrei interesse no curso: *{curso_sel}*. Meu nome é *{nome}*."
                     texto_url = urllib.parse.quote(mensagem_texto)
@@ -175,35 +169,28 @@ with col2:
                 else: st.error("Erro ao salvar.")
             else: st.error("Preencha todos os campos.")
 
-# --- RODAPÉ ORIGINAL ---
+# --- RODAPÉ ---
 footer_html = """
 <div class="footer-container">
     <div class="footer-top">
         <a href="https://www.sp.senai.br/fale-conosco" target="_blank">FALE CONOSCO</a>
         <a href="https://www.sp.senai.br/trabalhe-conosco" target="_blank">TRABALHE CONOSCO</a>
         <a href="https://www.sp.senai.br/ouvidoria" target="_blank">OUVIDORIA</a>
-        <a href="https://www.sp.senai.br/institucional/politica-de-privacidade" target="_blank">POLÍTICA DE PRIVACIDADE</a>
     </div>
     <div class="footer-social">
         <a href="https://www.facebook.com/senaisp" target="_blank"><i class="fab fa-facebook-f"></i></a>
         <a href="https://www.youtube.com/senaisp" target="_blank"><i class="fab fa-youtube"></i></a>
         <a href="https://www.instagram.com/senaisp/" target="_blank"><i class="fab fa-instagram"></i></a>
-        <a href="https://api.whatsapp.com/send?phone=551133220050" target="_blank"><i class="fab fa-whatsapp"></i></a>
     </div>
     <div class="footer-content">
         <div>
             <h4>CENTRAL DE RELACIONAMENTO</h4>
             <p>(11) 3322-0050 (Telefone/WhatsApp)</p>
-            <p>0800-055-1000 (Interior de SP)</p>
         </div>
         <div>
             <h4>UNIDADE GUARULHOS</h4>
             <p>Rua Antonio de Castro Figueirôa, 225</p>
-            <p>Vila Alzira - Guarulhos/SP</p>
         </div>
-    </div>
-    <div class="footer-bottom">
-        <span>© 2026 SENAI-SP - Unidade 122</span>
     </div>
 </div>
 """
@@ -214,7 +201,6 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("🔒 Área Administrativa")
     senha_mestra = st.secrets["auth"]["admin_password"] if "auth" in st.secrets else ""
-    # Key adicionada para permitir a limpeza da senha ao sair
     senha_digitada = st.text_input("Senha", type="password", key="senha_admin")
 
     if senha_digitada == senha_mestra and senha_mestra != "":
@@ -222,5 +208,5 @@ with st.sidebar:
         if st.checkbox("Ver Leads"):
             st.dataframe(ler_todos_leads())
         
-        # Botão sair chama a função que deleta o session_state
-        st.button("Sair / Limpar App", on_click=reset_geral_callback)
+        # O botão agora chama a função sem o erro de no-op
+        st.button("Sair / Limpar Tudo", on_click=reset_geral_callback)
