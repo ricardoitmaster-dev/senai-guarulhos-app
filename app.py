@@ -18,93 +18,67 @@ def get_base64_of_bin_file(bin_file):
         return base64.b64encode(data).decode()
     return ""
 
-# --- DICIONÁRIO DE CURSOS ATUALIZADO (INCORPORANDO SEUS NOVOS PEDIDOS) ---
+# --- DICIONÁRIO DE CURSOS (Sua Lista Atualizada e Fixa) ---
 DADOS_CURSOS_LOCAL = {
     "Metalmecânica": [
-        "MECÂNICO DE USINAGEM", 
-        "PROGRAMADOR E OPERADOR DE CNC",
-        "SOLDADOR MAG",
-        "SOLDADOR TIG",
-        "MECÂNICO DE MANUTENÇÃO",
-        "CALDEIRARIA BÁSICA",
-        "METROLOGIA APLICADA",
-        "INTELIGÊNCIA ARTIFICIAL NA PROGRAMAÇÃO CNC"
+        "MECÂNICO DE USINAGEM", "PROGRAMADOR E OPERADOR DE CNC", "SOLDADOR MAG",
+        "SOLDADOR TIG", "MECÂNICO DE MANUTENÇÃO", "CALDEIRARIA BÁSICA",
+        "METROLOGIA APLICADA", "INTELIGÊNCIA ARTIFICIAL NA PROGRAMAÇÃO CNC"
     ],
     "Tecnologia da Informação": [
-        "EXCEL BÁSICO",
-        "EXCEL AVANÇADO",
-        "EXCEL COMPLETO",
-        "INFORMÁTICA BÁSICA",
-        "IA GENERATIVA PARA PRODUTIVIDADE",
-        "Desenvolvimento de soluções em inteligencia artificial - Microsoft Al-102",
-        "Implantação de Serviços de Inteligência Artificial em Nuvem - Microsoft AI-900",
-        "Fundamentos de Inteligência Artificial Generativa - Google Cloud",
-        "Implantação de Serviços de Inteligência Artificial em Nuvem - Google Cloud AI Foundations",
-        "Implantação de Serviços de Inteligência Artificial Generativa em Nuvem - Google Cloud",
-        "Inteligências Artificiais Generativas Aplicada A Programação - Chatgpt",
-        "Administração de Sistemas ServiceNow - CSA",
-        "Desenvolvimento de Aplicações com IA Generativa utilizando Google Antigravity",
-        "Criação de Agentes de IA com o Microsoft AI Foundry",
-        "Criação de Aplicativos com Google Firebase e Gemini (PC disponível em Abril)",
-        "Programação em Inteligência Artificial Generativa",
-        "MARKETING DIGITAL COM INTELIGÊNCIA ARTIFICIAL",
-        "PYTHON PARA ANÁLISE DE DADOS", 
-        "POWER BI (DASHBOARDS)",
-        "TÉCNICO EM DESENVOLVIMENTO DE SISTEMAS"
+        "EXCEL BÁSICO", "EXCEL AVANÇADO", "EXCEL COMPLETO", "INFORMÁTICA BÁSICA",
+        "IA GENERATIVA PARA PRODUTIVIDADE", "Microsoft Al-102 - Soluções em IA",
+        "Microsoft AI-900 - Serviços de IA em Nuvem", "Google Cloud - Fundamentos de IA Generativa",
+        "Google Cloud AI Foundations", "Google Cloud - IA Generativa em Nuvem",
+        "ChatGPT - IA Aplicada à Programação", "Administração de Sistemas ServiceNow - CSA",
+        "Google Antigravity - IA Generativa", "Microsoft AI Foundry - Agentes de IA",
+        "Google Firebase e Gemini", "Programação em IA Generativa",
+        "MARKETING DIGITAL COM IA", "PYTHON PARA ANÁLISE DE DADOS", 
+        "POWER BI (DASHBOARDS)", "TÉCNICO EM DESENVOLVIMENTO DE SISTEMAS"
     ],
     "Eletroeletrônica": [
-        "ELETRICISTA INSTALADOR", 
-        "COMANDOS ELÉTRICOS",
-        "CLP - CONTROLADORES LÓGICOS PROGRAMÁVEIS",
-        "INSTALAÇÕES ELÉTRICAS RESIDENCIAIS",
-        "MANUTENÇÃO DE SISTEMAS FOTOVOLTAICOS",
-        "INTELIGÊNCIA ARTIFICIAL APLICADO À DETECÇÃO DE ANOMALIAS EM MÁQUINAS"
+        "ELETRICISTA INSTALADOR", "COMANDOS ELÉTRICOS", "CLP - CONTROLADORES LÓGICOS",
+        "INSTALAÇÕES ELÉTRICAS RESIDENCIAIS", "MANUTENÇÃO DE SISTEMAS FOTOVOLTAICOS",
+        "IA APLICADA À DETECÇÃO DE ANOMALIAS EM MÁQUINAS"
     ],
     "Gestão e Logística": [
-        "QUALIDADE",
-        "ALMOXARIFE", 
-        "ASSISTENTE ADMINISTRATIVO",
-        "ASSISTENTE DE RECURSOS HUMANOS",
-        "LOGÍSTICA INTEGRADA",
-        "GESTÃO DE ESTOQUES"
+        "QUALIDADE", "ALMOXARIFE", "ASSISTENTE ADMINISTRATIVO",
+        "ASSISTENTE DE RECURSOS HUMANOS", "LOGÍSTICA INTEGRADA", "GESTÃO DE ESTOQUES"
     ],
     "Automobilística": [
-        "MECÂNICO DE AUTOMÓVEIS LEVES",
-        "ELETRICISTA VEICULAR",
-        "SISTEMAS DE INJEÇÃO ELETRÔNICA"
+        "MECÂNICO DE AUTOMÓVEIS LEVES", "ELETRICISTA VEICULAR", "SISTEMAS DE INJEÇÃO ELETRÔNICA"
     ],
     "Manutenção e Lubrificação Industrial": [
-        "INTELIGÊNCIA ARTIFICIAL NO MONITORAMENTO DA MANUTENÇÃO PREDITIVA",
-        "DETECÇÃO A LASER E INTELIGÊNCIA ARTIFICIAL PARA LUBRIFICAÇÃO INDUSTRIAL"
+        "IA NO MONITORAMENTO DA MANUTENÇÃO PREDITIVA",
+        "DETECÇÃO A LASER E IA PARA LUBRIFICAÇÃO INDUSTRIAL"
     ]
 }
 
-# --- CSS: ESTILO 3D E FAIXA TOTAL (Design Original Preservado) ---
+# --- ESTILO CSS (Neumorfismo e Design 122) ---
 st.markdown("""
     <style>
     .stApp { background-color: #e0e5ec; }
-    .logo-container { position: relative; z-index: 10; margin-bottom: -20px; display: flex; justify-content: center; padding-top: 10px; }
     .header-senai { 
-        background: #ff0000; padding: 40px 0px 25px 0px; color: white; text-align: center; 
+        background: #ff0000; padding: 40px 0px; color: white; text-align: center; 
         width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;
-        z-index: 5; box-shadow: 0px 10px 15px rgba(0,0,0,0.1); border-bottom: 4px solid #cc0000;
+        box-shadow: 0px 10px 15px rgba(0,0,0,0.1); border-bottom: 4px solid #cc0000;
     }
-    .header-senai h1 { font-size: 28px !important; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-weight: 800; color: white !important; }
-    .header-senai p { font-size: 16px !important; margin: 5px 0 0 0; opacity: 0.9; color: white !important; }
-    label, [data-testid="stWidgetLabel"] p { color: #000000 !important; font-weight: 600 !important; }
+    .header-senai h1 { font-size: 28px !important; margin: 0; font-weight: 800; color: white !important; }
     div.stButton > button { 
-        background-color: #ff0000 !important; color: #ffffff !important; font-weight: bold !important; 
-        height: 55px !important; border-radius: 15px !important; width: 100% !important;
+        background-color: #ff0000 !important; color: white !important; font-weight: bold !important; 
+        height: 50px; border-radius: 15px; width: 100%; border: none;
         box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff !important;
     }
-    [data-testid="stForm"] { background-color: #e0e5ec !important; border-radius: 30px !important; padding: 2rem !important; box-shadow: inset 8px 8px 16px #bebebe, inset -8px -8px 16px #ffffff !important; border: none !important; }
-    .footer-container { background-color: #b91d1d; color: white; padding: 40px 20px; margin-top: 50px; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; }
-    .footer-bottom { text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; margin-top: 20px; font-size: 12px; background-color: #ff0000; width: 100vw; padding-bottom: 20px; }
+    [data-testid="stForm"] { 
+        background-color: #e0e5ec !important; border-radius: 30px !important; padding: 2rem !important; 
+        box-shadow: 8px 8px 16px #bebebe, -8px -8px 16px #ffffff !important; border: none !important; 
+    }
+    .footer-custom { background-color: #ff0000; color: white; text-align: center; padding: 20px; margin-top: 50px; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- GOOGLE SHEETS ---
-def salvar_novo_lead(lista_dados):
+# --- GOOGLE SHEETS (Funções de Dados) ---
+def conectar_sheets():
     try:
         s = st.secrets["connections"]["gsheets"]
         info = {
@@ -117,47 +91,77 @@ def salvar_novo_lead(lista_dados):
             "client_x509_cert_url": s["client_x509_cert_url"]
         }
         creds = service_account.Credentials.from_service_account_info(info, scopes=["https://www.googleapis.com/auth/spreadsheets"])
-        service = build("sheets", "v4", credentials=creds, cache_discovery=False)
+        return build("sheets", "v4", credentials=creds, cache_discovery=False)
+    except: return None
+
+def salvar_lead(dados):
+    service = conectar_sheets()
+    if service:
         url = st.secrets["connections"]["gsheets"]["spreadsheet"]
-        sheet_id = url.split("/d/")[1].split("/")[0]
+        id_planilha = url.split("/d/")[1].split("/")[0]
         service.spreadsheets().values().append(
-            spreadsheetId=sheet_id, range="A1", valueInputOption="RAW",
-            insertDataOption="INSERT_ROWS", body={"values": [lista_dados]}
+            spreadsheetId=id_planilha, range="A1", valueInputOption="RAW",
+            insertDataOption="INSERT_ROWS", body={"values": [dados]}
         ).execute()
         return True
-    except: return False
+    return False
 
-# --- INTERFACE ---
+# --- BARRA LATERAL (Fachada e Info) ---
+with st.sidebar:
+    path_fachada = os.path.join("imagens", "fachada.png")
+    if os.path.exists(path_fachada):
+        st.image(path_fachada, caption="SENAI Guarulhos - Unidade 122")
+    
+    st.markdown("---")
+    st.markdown("### 🏢 Sobre a Unidade")
+    st.info("O SENAI 122 é referência em Metalmecânica e Tecnologia da Informação na região de Guarulhos.")
+    
+    # --- PAINEL ADM (Restaurado) ---
+    st.markdown("---")
+    with st.expander("🔐 Área Administrativa"):
+        senha = st.text_input("Senha", type="password")
+        if senha == st.secrets.get("admin_password", "senai122"):
+            st.success("Acesso Liberado")
+            if st.button("Visualizar Leads"):
+                st.write("Conectando à base de dados...")
+                # Aqui você pode adicionar a lógica de carregar o DataFrame da planilha
+
+# --- CABEÇALHO ---
 path_logo = os.path.join("imagens", "logo.png")
 if os.path.exists(path_logo):
     logo_64 = get_base64_of_bin_file(path_logo)
-    st.markdown(f'<div class="logo-container"><img src="data:image/png;base64,{logo_64}" width="150"></div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="text-align: center; margin-bottom: -20px;"><img src="data:image/png;base64,{logo_64}" width="150"></div>', unsafe_allow_html=True)
 
-st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse Profissional</p></div>', unsafe_allow_html=True)
+st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS - UNIDADE 122</h1><p>Excelência em Formação Profissional</p></div>', unsafe_allow_html=True)
 
+# --- FORMULÁRIO DE INTERESSE ---
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    st.markdown("<h3 style='text-align: center; margin-top: 20px; color: #000000;'>📋 Cadastro de Interesse</h3>", unsafe_allow_html=True)
+    st.markdown("<br><h4 style='text-align: center; color: #333;'>Manifestação de Interesse em Cursos</h4>", unsafe_allow_html=True)
     
-    # Seleção de Área e Curso baseada na nova lista local
-    area_sel = st.selectbox("Área Profissional:", ["Selecione..."] + sorted(list(DADOS_CURSOS_LOCAL.keys())))
-    opcoes_cursos = sorted(DADOS_CURSOS_LOCAL[area_sel]) if area_sel != "Selecione..." else []
-    curso_sel = st.selectbox("Curso:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_sel == "Selecione..."))
+    area_sel = st.selectbox("Escolha a Área de Interesse:", ["Selecione..."] + sorted(list(DADOS_CURSOS_LOCAL.keys())))
+    lista_cursos = sorted(DADOS_CURSOS_LOCAL[area_sel]) if area_sel != "Selecione..." else []
+    curso_sel = st.selectbox("Escolha o Curso:", ["Aguardando Área..."] + lista_cursos, disabled=(area_sel == "Selecione..."))
 
-    with st.form("form_3d", clear_on_submit=True):
-        nome = st.text_input("Nome Completo")
-        email = st.text_input("E-mail")
-        whats = st.text_input("WhatsApp")
-        obs = st.text_area("Observações")
-        enviar = st.form_submit_button("REGISTRAR AGORA")
+    with st.form("form_registro", clear_on_submit=True):
+        nome = st.text_input("Seu Nome Completo")
+        email = st.text_input("Seu melhor E-mail")
+        whats = st.text_input("WhatsApp para contato")
+        obs = st.text_area("Alguma dúvida ou observação?")
+        btn_enviar = st.form_submit_button("REGISTRAR MEU INTERESSE")
 
-        if enviar:
-            if area_sel != "Selecione..." and nome and email and curso_sel != "Aguardando área...":
-                data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                if salvar_novo_lead([nome, email, f"'{whats}", area_sel, curso_sel, obs, data_atual]):
-                    st.success(f"Excelente, {nome}! Seu interesse foi registrado.")
+        if btn_enviar:
+            if area_sel != "Selecione..." and nome and email and curso_sel != "Aguardando Área...":
+                data_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                if salvar_lead([nome, email, f"'{whats}", area_sel, curso_sel, obs, data_hora]):
+                    st.success(f"Obrigado pelo interesse, {nome}!")
+                    # --- MENSAGEM RESTAURADA ---
+                    st.info("✅ Entraremos em contato com você assim que houver turmas abertas para o curso selecionado.")
                     st.balloons()
-                else: st.error("Erro ao salvar. Verifique sua conexão.")
-            else: st.error("Por favor, preencha os campos obrigatórios.")
+                else:
+                    st.error("Erro técnico ao salvar. Tente novamente em instantes.")
+            else:
+                st.warning("Por favor, preencha todos os campos obrigatórios.")
 
-st.markdown('<div class="footer-container"><div class="footer-bottom">Copyright 2026 © SENAI Guarulhos 122</div></div>', unsafe_allow_html=True)
+# --- RODAPÉ ---
+st.markdown('<div class="footer-custom">Copyright 2026 © SENAI Guarulhos 122 - Gestão Ricardo IT Master</div>', unsafe_allow_html=True)
