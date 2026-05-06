@@ -15,8 +15,6 @@ def reset_geral_callback():
     # Limpa todos os valores do session_state
     for key in list(st.session_state.keys()):
         del st.session_state[key]
-    # O Streamlit recarregará a página automaticamente após o callback, 
-    # voltando os widgets para os valores padrão (index=0 ou vazio).
 
 # Função para converter imagem local em base64
 def get_base64_of_bin_file(bin_file):
@@ -83,7 +81,15 @@ DADOS_CURSOS = {
     ],
     "Metalmecânica": ["MECÂNICO DE USINAGEM", "PROGRAMADOR CNC", "SOLDADOR MAG/TIG"],
     "Eletroeletrônica": ["ELETRICISTA INSTALADOR", "COMANDOS ELÉTRICOS", "SISTEMAS FOTOVOLTAICOS"],
-    "Gestão e Logística": ["ALMOXARIFE", "ASSISTENTE ADMINISTRATIVO", "LOGÍSTICA INTEGRADA"]
+    "Gestão e Logística": [
+        "ALMOXARIFE", 
+        "ASSISTENTE ADMINISTRATIVO", 
+        "LOGÍSTICA INTEGRADA",
+        "ASSISTENTE DE RECURSOS HUMANOS", 
+        "ASSSISTENTE FINANCEIRO",
+        "GESTÃO DE PESSOAS E LIDERANÇA",
+        "GESTÃO EM ENGENHARIA DE PRODUÇÃO"
+    ]
 }
 
 # --- FUNÇÕES GOOGLE SHEETS ---
@@ -144,7 +150,6 @@ if os.path.exists(path_fachada):
 
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    # AREA PROFISSIONAL: Agora resetável via callback
     opcoes_areas = ["Selecione..."] + sorted(list(DADOS_CURSOS.keys()))
     area_sel = st.selectbox("Área Profissional:", opcoes_areas, key="area_input")
     
@@ -212,16 +217,12 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("🔒 Área Administrativa")
     
-    # Obtém senha do secrets
     senha_mestra = st.secrets["auth"]["admin_password"] if "auth" in st.secrets else ""
-    
-    # SENHA: O campo agora limpa pois o session_state['senha_admin'] é deletado no callback
     senha_digitada = st.text_input("Senha", type="password", key="senha_admin")
 
     if senha_digitada == senha_mestra and senha_mestra != "":
-        st.success("Acesso Liberado")
-        if st.checkbox("Ver Leads"):
+        st.sidebar.success("Acesso Liberado")
+        if st.sidebar.checkbox("Ver Leads"):
             st.dataframe(ler_todos_leads())
         
-        # Botão que dispara a limpeza total
         st.button("Sair / Limpar Tudo", on_click=reset_geral_callback)
