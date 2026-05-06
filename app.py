@@ -12,11 +12,9 @@ st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout=
 
 # --- FUNÇÃO DE LIMPEZA TOTAL (RESET DE WIDGETS) ---
 def reset_geral_callback():
-    # Limpa todos os valores do session_state
     for key in list(st.session_state.keys()):
         del st.session_state[key]
 
-# Função para converter imagem local em base64
 def get_base64_of_bin_file(bin_file):
     if os.path.exists(bin_file):
         with open(bin_file, 'rb') as f:
@@ -29,36 +27,18 @@ st.markdown("""
     <style>
     .stApp { background-color: #e0e5ec; }
     .logo-container { position: relative; z-index: 10; margin-bottom: -20px; display: flex; justify-content: center; padding-top: 10px; }
-    
-    .moldura-3d-ajustada { 
-        display: block; 
-        border-radius: 25px; 
-        box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff; 
-        border: 4px solid #e0e5ec; 
-        overflow: hidden; 
-        margin: 25px auto; 
-    }
+    .moldura-3d-ajustada { display: block; border-radius: 25px; box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff; border: 4px solid #e0e5ec; overflow: hidden; margin: 25px auto; }
     .moldura-3d-ajustada img { border-radius: 20px; display: block; width: 100%; height: auto; }
-    
     .header-senai { background: #ff0000; padding: 40px 0px 25px 0px; color: white; text-align: center; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; z-index: 5; box-shadow: 0px 10px 15px rgba(0,0,0,0.1); border-bottom: 4px solid #cc0000; }
     .header-senai h1 { font-size: 28px !important; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-weight: 800; color: white !important; }
-    
-    .btn-whatsapp {
-        display: inline-flex; align-items: center; justify-content: center;
-        background-color: #25D366 !important; color: white !important;
-        padding: 15px 25px; border-radius: 12px; text-decoration: none;
-        font-weight: bold; font-size: 18px; box-shadow: 4px 4px 10px rgba(0,0,0,0.2);
-        margin-top: 15px; width: 100%; transition: 0.3s;
-    }
+    .btn-whatsapp { display: inline-flex; align-items: center; justify-content: center; background-color: #25D366 !important; color: white !important; padding: 15px 25px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 18px; box-shadow: 4px 4px 10px rgba(0,0,0,0.2); margin-top: 15px; width: 100%; transition: 0.3s; }
     .btn-whatsapp:hover { background-color: #128C7E !important; transform: scale(1.02); }
-
     .footer-container { width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; margin-top: 50px; font-family: sans-serif; }
     .footer-container a { text-decoration: none !important; color: inherit !important; }
     .footer-top { background-color: #f4f4f4; padding: 15px 0; text-align: center; display: flex; justify-content: center; gap: 20px; font-size: 12px; font-weight: bold; color: #444; }
     .footer-social { background-color: #ff0000; padding: 15px 0; text-align: center; color: white; display: flex; justify-content: center; gap: 25px; font-size: 20px; }
     .footer-content { background-color: #b5121b; padding: 40px 10% 20px 10%; color: white; display: grid; grid-template-columns: 1fr 1fr; gap: 50px; }
     .footer-bottom { background-color: #b5121b; padding: 20px 0; border-top: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: center; gap: 30px; font-size: 13px; font-weight: bold; color: white !important; }
-    
     label, [data-testid="stWidgetLabel"] p { color: #000000 !important; font-weight: 600 !important; }
     div.stButton > button { background-color: #ff0000 !important; color: #ffffff !important; font-weight: bold !important; height: 55px !important; border-radius: 15px !important; width: 100% !important; border: none !important; box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff !important; }
     [data-testid="stForm"] { background-color: #e0e5ec !important; border-radius: 30px !important; padding: 2rem !important; box-shadow: inset 8px 8px 16px #bebebe, inset -8px -8px 16px #ffffff !important; border: none !important; }
@@ -66,7 +46,7 @@ st.markdown("""
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     """, unsafe_allow_html=True)
 
-# --- DADOS DOS CURSOS ---
+# --- DADOS DOS CURSOS (COM OS NOVOS CURSOS DE GESTÃO) ---
 DADOS_CURSOS = {
     "Tecnologia da Informação": [
         "EXCEL BÁSICO", "EXCEL COMPLETO", "EXCEL AVANÇADO", "INFORMÁTICA BÁSICA", 
@@ -78,30 +58,13 @@ DADOS_CURSOS = {
         "INTELIGÊNCIAS ARTIFICIAIS GENERATIVAS APLICADA A PROGRAMAÇÃO - CHATGPT", 
         "MARKETING DIGITAL COM INTELIGÊNCIA ARTIFICIAL", 
         "PROGRAMAÇÃO EM INTELIGÊNCIA ARTIFICIAL GENERATIVA"
-        "PROGRAMAÇÃO EM PYTHON"
     ],
-    "Metalmecânica": [
-        "MECÂNICO DE USINAGEM", 
-        "PROGRAMADOR CNC", 
-        "SOLDADOR MAG/TIG",
-        "AJUSTADOR MECÂNICO"
-    ],
-    "Eletroeletrônica": [
-        "ELETRICISTA INSTALADOR", 
-        "COMANDOS ELÉTRICOS", 
-        "SISTEMAS FOTOVOLTAICOS",
-        "AUXILIAR DE ELETRÔNICA"
-    ],
+    "Metalmecânica": ["MECÂNICO DE USINAGEM", "PROGRAMADOR CNC", "SOLDADOR MAG/TIG"],
+    "Eletroeletrônica": ["ELETRICISTA INSTALADOR", "COMANDOS ELÉTRICOS", "SISTEMAS FOTOVOLTAICOS"],
     "Gestão e Logística": [
-        "ALMOXARIFE", 
-        "ASSISTENTE ADMINISTRATIVO", 
-        "LOGÍSTICA INTEGRADA",
-        "ASSISTENTE DE RECURSOS HUMANOS", 
-        "ASSSISTENTE FINANCEIRO",
-        "GESTÃO DE PESSOAS E LIDERANÇA",
-        "GESTÃO EM ENGENHARIA DE PRODUÇÃO",
-        "ANALISTA DE LOGÍSTICA",
-        "ANALISTA DA QUALIDADE"
+        "ALMOXARIFE", "ASSISTENTE ADMINISTRATIVO", "LOGÍSTICA INTEGRADA",
+        "ASSISTENTE DE RECURSOS HUMANOS", "ASSSISTENTE FINANCEIRO",
+        "GESTÃO DE PESSOAS E LIDERANÇA", "GESTÃO EM ENGENHARIA DE PRODUÇÃO"
     ]
 }
 
@@ -153,19 +116,12 @@ st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - 
 
 if os.path.exists(path_fachada):
     fachada_base = get_base64_of_bin_file(path_fachada)
-    st.markdown(f'''
-        <div style="text-align: center;">
-            <div class="moldura-3d-ajustada" style="display: inline-block; width: auto; max-width: 90%;">
-                <img src="data:image/jpeg;base64,{fachada_base}" style="display: block; width: auto; max-height: 350px;">
-            </div>
-        </div>
-    ''', unsafe_allow_html=True)
+    st.markdown(f'''<div style="text-align: center;"><div class="moldura-3d-ajustada" style="display: inline-block; width: auto; max-width: 90%;"><img src="data:image/jpeg;base64,{fachada_base}" style="display: block; width: auto; max-height: 350px;"></div></div>''', unsafe_allow_html=True)
 
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     opcoes_areas = ["Selecione..."] + sorted(list(DADOS_CURSOS.keys()))
     area_sel = st.selectbox("Área Profissional:", opcoes_areas, key="area_input")
-    
     opcoes_cursos = sorted(DADOS_CURSOS[area_sel]) if area_sel != "Selecione..." else []
     curso_sel = st.selectbox("Curso:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_sel == "Selecione..."), key="curso_input")
 
@@ -182,7 +138,6 @@ with col2:
                 if salvar_novo_lead([nome, email, f"'{whats}", area_sel, curso_sel, obs, data_atual]):
                     st.success(f"Excelente, {nome}! Seu interesse foi registrado.")
                     st.balloons()
-                    
                     numero_destino = "551133220050" 
                     mensagem_texto = f"Olá! Registrei interesse no curso: *{curso_sel}*. Meu nome é *{nome}*."
                     texto_url = urllib.parse.quote(mensagem_texto)
@@ -191,41 +146,10 @@ with col2:
                 else: st.error("Erro ao salvar.")
             else: st.error("Preencha todos os campos.")
 
-# --- RODAPÉ INTEGRAL ---
-footer_html = """
-<div class="footer-container">
-    <div class="footer-top">
-        <a href="https://www.sp.senai.br/fale-conosco" target="_blank">FALE CONOSCO</a>
-        <a href="https://www.sp.senai.br/trabalhe-conosco" target="_blank">TRABALHE CONOSCO</a>
-        <a href="https://www.sp.senai.br/ouvidoria" target="_blank">OUVIDORIA</a>
-        <a href="https://www.sp.senai.br/institucional/politica-de-privacidade" target="_blank">POLÍTICA DE PRIVACIDADE</a>
-    </div>
-    <div class="footer-social">
-        <a href="https://www.facebook.com/senaisp" target="_blank"><i class="fab fa-facebook-f"></i></a>
-        <a href="https://www.youtube.com/senaisp" target="_blank"><i class="fab fa-youtube"></i></a>
-        <a href="https://www.instagram.com/senaisp/" target="_blank"><i class="fab fa-instagram"></i></a>
-        <a href="https://api.whatsapp.com/send?phone=551133220050" target="_blank"><i class="fab fa-whatsapp"></i></a>
-    </div>
-    <div class="footer-content">
-        <div>
-            <h4>CENTRAL DE RELACIONAMENTO</h4>
-            <p>(11) 3322-0050 (Telefone/WhatsApp)</p>
-            <p>0800-055-1000 (Interior de SP)</p>
-        </div>
-        <div>
-            <h4>UNIDADE GUARULHOS</h4>
-            <p>Rua Antonio de Castro Figueirôa, 225</p>
-            <p>Vila Alzira - Guarulhos/SP</p>
-        </div>
-    </div>
-    <div class="footer-bottom">
-        <span>© 2026 SENAI-SP - Unidade 122</span>
-    </div>
-</div>
-"""
-st.markdown(footer_html, unsafe_allow_html=True)
+# --- RODAPÉ ---
+st.markdown("""<div class="footer-container"><div class="footer-top"><a href="https://www.sp.senai.br/fale-conosco" target="_blank">FALE CONOSCO</a><a href="https://www.sp.senai.br/trabalhe-conosco" target="_blank">TRABALHE CONOSCO</a><a href="https://www.sp.senai.br/ouvidoria" target="_blank">OUVIDORIA</a><a href="https://www.sp.senai.br/institucional/politica-de-privacidade" target="_blank">POLÍTICA DE PRIVACIDADE</a></div><div class="footer-social"><a href="https://www.facebook.com/senaisp" target="_blank"><i class="fab fa-facebook-f"></i></a><a href="https://www.youtube.com/senaisp" target="_blank"><i class="fab fa-youtube"></i></a><a href="https://www.instagram.com/senaisp/" target="_blank"><i class="fab fa-instagram"></i></a><a href="https://api.whatsapp.com/send?phone=551133220050" target="_blank"><i class="fab fa-whatsapp"></i></a></div><div class="footer-content"><div><h4>CENTRAL DE RELACIONAMENTO</h4><p>(11) 3322-0050 (Telefone/WhatsApp)</p><p>0800-055-1000 (Interior de SP)</p></div><div><h4>UNIDADE GUARULHOS</h4><p>Rua Antonio de Castro Figueirôa, 225</p><p>Vila Alzira - Guarulhos/SP</p></div></div><div class="footer-bottom"><span>© 2026 SENAI-SP - Unidade 122</span></div></div>""", unsafe_allow_html=True)
 
-# --- ÁREA ADMINISTRATIVA ---
+# --- ÁREA ADMINISTRATIVA (CORRIGIDA) ---
 with st.sidebar:
     st.markdown("---")
     st.subheader("🔒 Área Administrativa")
@@ -233,9 +157,16 @@ with st.sidebar:
     senha_mestra = st.secrets["auth"]["admin_password"] if "auth" in st.secrets else ""
     senha_digitada = st.text_input("Senha", type="password", key="senha_admin")
 
-    if senha_digitada == senha_mestra and senha_mestra != "":
-        st.sidebar.success("Acesso Liberado")
-        if st.sidebar.checkbox("Ver Leads"):
-            st.dataframe(ler_todos_leads())
+    if senha_mestra != "" and senha_digitada == senha_mestra:
+        st.success("Acesso Liberado")
+        if st.checkbox("Ver Leads"):
+            leads_df = ler_todos_leads()
+            if not leads_df.empty:
+                st.markdown("### 📊 Leads Cadastrados")
+                st.dataframe(leads_df)
+            else:
+                st.info("Nenhum lead encontrado.")
         
         st.button("Sair / Limpar Tudo", on_click=reset_geral_callback)
+    elif senha_digitada != "":
+        st.error("Senha incorreta")
