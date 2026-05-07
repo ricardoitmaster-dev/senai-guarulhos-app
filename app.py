@@ -10,7 +10,7 @@ from googleapiclient.discovery import build
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- FUNÇÃO DE LIMPEZA TOTAL (RESET DE WIDGETS) ---
+# --- FUNÇÃO DE LIMPEZA TOTAL ---
 def reset_geral_callback():
     for key in list(st.session_state.keys()):
         del st.session_state[key]
@@ -25,7 +25,7 @@ def get_base64_of_bin_file(bin_file):
         return ""
     return ""
 
-# --- CSS: ESTILO 3D E RODAPÉ OFICIAL ---
+# --- CSS: ESTILO 3D E RODAPÉ ---
 st.markdown("""
     <style>
     .stApp { background-color: #e0e5ec; }
@@ -105,11 +105,12 @@ def salvar_novo_lead(lista_dados):
             insertDataOption="INSERT_ROWS", 
             body={"values": [lista_dados]}
         ).execute()
+        # Limpa o cache após salvar para que a próxima leitura venha atualizada
+        st.cache_data.clear()
         return True
     except Exception:
         return False
 
-@st.cache_data(ttl=600)
 def ler_todos_leads():
     try:
         service = conectar_google_sheets()
@@ -153,6 +154,7 @@ with col2:
         if enviar:
             if area_sel != "Selecione..." and nome and email:
                 data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                # Envia com aspas simples no WhatsApp para o Excel tratar como texto
                 if salvar_novo_lead([nome, email, f"'{whats}", area_sel, curso_sel, obs, data_atual]):
                     st.success(f"Excelente, {nome}! Seu interesse foi registrado.")
                     st.balloons()
@@ -181,13 +183,13 @@ with st.sidebar:
         st.success("Acesso Liberado")
         
         if st.checkbox("Ver Leads"):
+            # Agora ele lê direto da planilha sem cache antigo
             leads_df = ler_todos_leads()
             
             if not leads_df.empty:
                 st.markdown("### 📊 Leads Cadastrados")
                 st.dataframe(leads_df)
                 
-                # Botão de download otimizado
                 csv_data = leads_df.to_csv(index=False).encode('utf-8-sig')
                 st.download_button(
                     label="📥 BAIXAR PLANILHA (CSV)",
