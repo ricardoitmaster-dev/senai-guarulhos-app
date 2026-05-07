@@ -36,7 +36,6 @@ st.markdown("""
     .header-senai { background: #ff0000; padding: 40px 0px 25px 0px; color: white; text-align: center; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; z-index: 5; box-shadow: 0px 10px 15px rgba(0,0,0,0.1); border-bottom: 4px solid #cc0000; }
     .header-senai h1 { font-size: 28px !important; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-weight: 800; color: white !important; }
     .btn-whatsapp { display: inline-flex; align-items: center; justify-content: center; background-color: #25D366 !important; color: white !important; padding: 15px 25px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 18px; box-shadow: 4px 4px 10px rgba(0,0,0,0.2); margin-top: 15px; width: 100%; transition: 0.3s; }
-    .btn-whatsapp:hover { background-color: #128C7E !important; transform: scale(1.02); }
     label, [data-testid="stWidgetLabel"] p { color: #000000 !important; font-weight: 600 !important; }
     div.stButton > button { background-color: #ff0000 !important; color: #ffffff !important; font-weight: bold !important; height: 55px !important; border-radius: 15px !important; width: 100% !important; border: none !important; box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff !important; }
     [data-testid="stForm"] { background-color: #e0e5ec !important; border-radius: 30px !important; padding: 2rem !important; box-shadow: inset 8px 8px 16px #bebebe, inset -8px -8px 16px #ffffff !important; border: none !important; }
@@ -52,26 +51,14 @@ DADOS_CURSOS = {
     "Gestão e Logística": ["ALMOXARIFE", "ASSISTENTE ADMINISTRATIVO", "LOGÍSTICA INTEGRADA", "ASSISTENTE DE RH", "GESTÃO E LIDERANÇA"]
 }
 
-# --- FUNÇÕES GOOGLE SHEETS ---
+# --- FUNÇÕES GOOGLE SHEETS (Omitidas para brevidade, mas devem ser mantidas as suas) ---
 def conectar_google_sheets():
     try:
         s = st.secrets["connections"]["gsheets"]
-        info = {
-            "type": "service_account",
-            "project_id": s["project_id"],
-            "private_key_id": s["private_key_id"],
-            "private_key": s["private_key"].replace("\\n", "\n").strip(),
-            "client_email": s["client_email"],
-            "client_id": s["client_id"],
-            "auth_uri": s["auth_uri"],
-            "token_uri": s["token_uri"],
-            "auth_provider_x509_cert_url": s["auth_provider_x509_cert_url"],
-            "client_x509_cert_url": s["client_x509_cert_url"]
-        }
+        info = {"type": "service_account", "project_id": s["project_id"], "private_key_id": s["private_key_id"], "private_key": s["private_key"].replace("\\n", "\n").strip(), "client_email": s["client_email"], "client_id": s["client_id"], "auth_uri": s["auth_uri"], "token_uri": s["token_uri"], "auth_provider_x509_cert_url": s["auth_provider_x509_cert_url"], "client_x509_cert_url": s["client_x509_cert_url"]}
         creds = service_account.Credentials.from_service_account_info(info, scopes=["https://www.googleapis.com/auth/spreadsheets"])
         return build("sheets", "v4", credentials=creds, cache_discovery=False)
-    except Exception:
-        return None
+    except: return None
 
 def salvar_novo_lead(lista_dados):
     try:
@@ -79,14 +66,10 @@ def salvar_novo_lead(lista_dados):
         if not service: return False
         url = st.secrets["connections"]["gsheets"]["spreadsheet"]
         sheet_id = url.split("/d/")[1].split("/")[0]
-        service.spreadsheets().values().append(
-            spreadsheetId=sheet_id, range="A1", valueInputOption="RAW",
-            insertDataOption="INSERT_ROWS", body={"values": [lista_dados]}
-        ).execute()
+        service.spreadsheets().values().append(spreadsheetId=sheet_id, range="A1", valueInputOption="RAW", insertDataOption="INSERT_ROWS", body={"values": [lista_dados]}).execute()
         st.cache_data.clear()
         return True
-    except Exception:
-        return False
+    except: return False
 
 def ler_todos_leads():
     try:
@@ -97,10 +80,9 @@ def ler_todos_leads():
         result = service.spreadsheets().values().get(spreadsheetId=sheet_id, range="A1:Z2000").execute()
         values = result.get("values", [])
         return pd.DataFrame(values[1:], columns=values[0]) if values else pd.DataFrame()
-    except Exception:
-        return pd.DataFrame()
+    except: return pd.DataFrame()
 
-# --- INTERFACE PRINCIPAL ---
+# --- INTERFACE ---
 path_logo = os.path.join("imagens", "logo.png")
 path_fachada = os.path.join("imagens", "fachada.jpg")
 logo_base = get_base64_of_bin_file(path_logo)
@@ -131,41 +113,29 @@ with col2:
             if area_sel != "Selecione..." and nome and email and whats_raw:
                 dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 if salvar_novo_lead([nome, email, whats_raw, area_sel, curso_sel, obs, dt]):
-                    st.success(f"Excelente, {nome}! Seu interesse foi registrado.")
+                    st.success(f"Excelente, {nome}!")
                     st.balloons()
                     
-                    # --- LÓGICA DE AMBIENTE DE TESTE ---
-                    # Pegamos o número digitado pelo usuário para ser o destino do WhatsApp
-                    whats_destino = re.sub(r'\D', '', whats_raw)
+                    # --- CONFIGURAÇÃO DE TESTE FIXA ---
+                    # COLOQUE SEU NÚMERO ABAIXO ENTRE AS ASPAS (Ex: "5511970309869")
+                    MEU_WHATS_TESTE = "SEU_CELULAR_AQUI" 
                     
-                    # Garante o código do país para o protocolo wa.me
-                    if not whats_destino.startswith('55'):
-                        whats_destino = '55' + whats_destino
-                    
-                    # Prepara a mensagem com codificação segura
                     texto_msg = f"Olá! Registrei interesse no curso: *{curso_sel}*. Meu nome é *{nome}*."
                     texto_safe = urllib.parse.quote(texto_msg)
-                    
-                    # Gera o link para o número de teste (o seu número digitado)
-                    link_wa = f"https://wa.me/{whats_destino}?text={texto_safe}"
+                    link_wa = f"https://wa.me/{MEU_WHATS_TESTE}?text={texto_safe}"
                     
                     st.markdown(f'<a href="{link_wa}" target="_blank" class="btn-whatsapp"><i class="fab fa-whatsapp" style="margin-right:10px;"></i> ENVIAR PELO WHATSAPP</a>', unsafe_allow_html=True)
                 else:
-                    st.error("Erro ao salvar dados.")
+                    st.error("Erro ao salvar.")
             else:
-                st.warning("Preencha todos os campos obrigatórios.")
+                st.warning("Preencha todos os campos.")
 
-# --- ÁREA ADMINISTRATIVA ---
+# --- ADMIN ---
 with st.sidebar:
-    st.markdown("---")
-    st.subheader("🔒 Área Administrativa")
-    senha_mestra = st.secrets["auth"]["admin_password"] if "auth" in st.secrets else ""
-    senha_digitada = st.text_input("Senha", type="password", key="senha_admin")
-
-    if senha_mestra != "" and senha_digitada == senha_mestra:
-        st.success("Acesso Liberado")
+    st.subheader("🔒 Admin")
+    senha_digitada = st.text_input("Senha", type="password")
+    if senha_digitada == st.secrets["auth"]["admin_password"]:
         if st.checkbox("Ver Leads"):
-            leads_df = ler_todos_leads()
-            if not leads_df.empty:
-                st.dataframe(leads_df)
+            df = ler_todos_leads()
+            if not df.empty: st.dataframe(df)
         st.button("Sair", on_click=reset_geral_callback)
