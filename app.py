@@ -4,7 +4,7 @@ from datetime import datetime
 import os
 import base64
 import urllib.parse
-import re
+import re # Essencial para limpar o número
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
@@ -26,7 +26,7 @@ def get_base64_of_bin_file(bin_file):
         return ""
     return ""
 
-# --- CSS: ESTILO 3D E RODAPÉ ---
+# --- CSS: ESTILO 3D ---
 st.markdown("""
     <style>
     .stApp { background-color: #e0e5ec; }
@@ -51,7 +51,7 @@ DADOS_CURSOS = {
     "Gestão e Logística": ["ALMOXARIFE", "ASSISTENTE ADMINISTRATIVO", "LOGÍSTICA INTEGRADA", "ASSISTENTE DE RH", "GESTÃO E LIDERANÇA"]
 }
 
-# --- FUNÇÕES GOOGLE SHEETS (Omitidas para brevidade, mas devem ser mantidas as suas) ---
+# --- FUNÇÕES GOOGLE SHEETS ---
 def conectar_google_sheets():
     try:
         s = st.secrets["connections"]["gsheets"]
@@ -112,17 +112,26 @@ with col2:
         if enviar:
             if area_sel != "Selecione..." and nome and email and whats_raw:
                 dt = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                # No Google Sheets salvamos como foi digitado para ficar bonito
                 if salvar_novo_lead([nome, email, whats_raw, area_sel, curso_sel, obs, dt]):
                     st.success(f"Excelente, {nome}!")
                     st.balloons()
                     
-                    # --- CONFIGURAÇÃO DE TESTE FIXA ---
-                    # COLOQUE SEU NÚMERO ABAIXO ENTRE AS ASPAS (Ex: "5511970309869")
-                    MEU_WHATS_TESTE = "SEU_CELULAR_AQUI" 
+                    # --- LIMPEZA AUTOMÁTICA PARA O LINK ---
+                    # 1. Pegamos o seu número de teste (conforme sua imagem)
+                    meu_numero_teste = "11984252627" 
                     
+                    # 2. Removemos TUDO que não for número (tira ( ), - e espaços)
+                    whats_limpo = re.sub(r'\D', '', meu_numero_teste)
+                    
+                    # 3. Garante que comece com 55 (Protocolo Internacional)
+                    if not whats_limpo.startswith('55'):
+                        whats_limpo = '55' + whats_limpo
+                    
+                    # 4. Prepara o link seguro
                     texto_msg = f"Olá! Registrei interesse no curso: *{curso_sel}*. Meu nome é *{nome}*."
                     texto_safe = urllib.parse.quote(texto_msg)
-                    link_wa = f"https://wa.me/{MEU_WHATS_TESTE}?text={texto_safe}"
+                    link_wa = f"https://wa.me/{whats_limpo}?text={texto_safe}"
                     
                     st.markdown(f'<a href="{link_wa}" target="_blank" class="btn-whatsapp"><i class="fab fa-whatsapp" style="margin-right:10px;"></i> ENVIAR PELO WHATSAPP</a>', unsafe_allow_html=True)
                 else:
