@@ -16,10 +16,13 @@ def reset_geral_callback():
         del st.session_state[key]
 
 def get_base64_of_bin_file(bin_file):
-    if os.path.exists(bin_file):
-        with open(bin_file, 'rb') as f:
-            data = f.read()
-        return base64.b64encode(data).decode()
+    try:
+        if os.path.exists(bin_file):
+            with open(bin_file, 'rb') as f:
+                data = f.read()
+            return base64.b64encode(data).decode()
+    except:
+        return ""
     return ""
 
 # --- CSS: ESTILO 3D E RODAPÉ OFICIAL ---
@@ -46,7 +49,7 @@ st.markdown("""
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     """, unsafe_allow_html=True)
 
-# --- DADOS DOS CURSOS (COM OS NOVOS CURSOS DE GESTÃO) ---
+# --- DADOS DOS CURSOS ---
 DADOS_CURSOS = {
     "Tecnologia da Informação": [
         "EXCEL BÁSICO", "EXCEL COMPLETO", "EXCEL AVANÇADO", "INFORMÁTICA BÁSICA", 
@@ -81,92 +84,3 @@ def conectar_google_sheets():
             "auth_provider_x509_cert_url": s["auth_provider_x509_cert_url"],
             "client_x509_cert_url": s["client_x509_cert_url"]
         }
-        creds = service_account.Credentials.from_service_account_info(info, scopes=["https://www.googleapis.com/auth/spreadsheets"])
-        return build("sheets", "v4", credentials=creds, cache_discovery=False)
-    except: return None
-
-def salvar_novo_lead(lista_dados):
-    try:
-        service = conectar_google_sheets()
-        url = st.secrets["connections"]["gsheets"]["spreadsheet"]
-        sheet_id = url.split("/d/")[1].split("/")[0]
-        service.spreadsheets().values().append(spreadsheetId=sheet_id, range="A1", valueInputOption="RAW", insertDataOption="INSERT_ROWS", body={"values": [lista_dados]}).execute()
-        return True
-    except: return False
-
-def ler_todos_leads():
-    try:
-        service = conectar_google_sheets()
-        url = st.secrets["connections"]["gsheets"]["spreadsheet"]
-        sheet_id = url.split("/d/")[1].split("/")[0]
-        result = service.spreadsheets().values().get(spreadsheetId=sheet_id, range="A1:Z2000").execute()
-        values = result.get("values", [])
-        return pd.DataFrame(values[1:], columns=values[0]) if values else pd.DataFrame()
-    except: return pd.DataFrame()
-
-# --- INTERFACE PRINCIPAL ---
-path_logo = os.path.join("imagens", "logo.png")
-path_fachada = os.path.join("imagens", "fachada.jpg")
-
-if os.path.exists(path_logo):
-    logo_base = get_base64_of_bin_file(path_logo)
-    st.markdown(f'<div class="logo-container"><div class="moldura-3d-ajustada" style="width:150px; margin: 0 auto;"><img src="data:image/png;base64,{logo_base}"></div></div>', unsafe_allow_html=True)
-
-st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse Profissional</p></div>', unsafe_allow_html=True)
-
-if os.path.exists(path_fachada):
-    fachada_base = get_base64_of_bin_file(path_fachada)
-    st.markdown(f'''<div style="text-align: center;"><div class="moldura-3d-ajustada" style="display: inline-block; width: auto; max-width: 90%;"><img src="data:image/jpeg;base64,{fachada_base}" style="display: block; width: auto; max-height: 350px;"></div></div>''', unsafe_allow_html=True)
-
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    opcoes_areas = ["Selecione..."] + sorted(list(DADOS_CURSOS.keys()))
-    area_sel = st.selectbox("Área Profissional:", opcoes_areas, key="area_input")
-    opcoes_cursos = sorted(DADOS_CURSOS[area_sel]) if area_sel != "Selecione..." else []
-    curso_sel = st.selectbox("Curso:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_sel == "Selecione..."), key="curso_input")
-
-    with st.form("form_registro", clear_on_submit=True):
-        nome = st.text_input("Nome Completo", key="nome_input")
-        email = st.text_input("E-mail", key="email_input")
-        whats = st.text_input("WhatsApp", key="whats_input")
-        obs = st.text_area("Observações", key="obs_input")
-        enviar = st.form_submit_button("REGISTRAR AGORA")
-
-        if enviar:
-            if area_sel != "Selecione..." and nome and email:
-                data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                if salvar_novo_lead([nome, email, f"'{whats}", area_sel, curso_sel, obs, data_atual]):
-                    st.success(f"Excelente, {nome}! Seu interesse foi registrado.")
-                    st.balloons()
-                    numero_destino = "551133220050" 
-                    mensagem_texto = f"Olá! Registrei interesse no curso: *{curso_sel}*. Meu nome é *{nome}*."
-                    texto_url = urllib.parse.quote(mensagem_texto)
-                    link_wa = f"https://wa.me/{numero_destino}?text={texto_url}"
-                    st.markdown(f'<a href="{link_wa}" target="_blank" class="btn-whatsapp"><i class="fab fa-whatsapp" style="margin-right:10px;"></i> ENVIAR PELO WHATSAPP</a>', unsafe_allow_html=True)
-                else: st.error("Erro ao salvar.")
-            else: st.error("Preencha todos os campos.")
-
-# --- RODAPÉ ---
-st.markdown("""<div class="footer-container"><div class="footer-top"><a href="https://www.sp.senai.br/fale-conosco" target="_blank">FALE CONOSCO</a><a href="https://www.sp.senai.br/trabalhe-conosco" target="_blank">TRABALHE CONOSCO</a><a href="https://www.sp.senai.br/ouvidoria" target="_blank">OUVIDORIA</a><a href="https://www.sp.senai.br/institucional/politica-de-privacidade" target="_blank">POLÍTICA DE PRIVACIDADE</a></div><div class="footer-social"><a href="https://www.facebook.com/senaisp" target="_blank"><i class="fab fa-facebook-f"></i></a><a href="https://www.youtube.com/senaisp" target="_blank"><i class="fab fa-youtube"></i></a><a href="https://www.instagram.com/senaisp/" target="_blank"><i class="fab fa-instagram"></i></a><a href="https://api.whatsapp.com/send?phone=551133220050" target="_blank"><i class="fab fa-whatsapp"></i></a></div><div class="footer-content"><div><h4>CENTRAL DE RELACIONAMENTO</h4><p>(11) 3322-0050 (Telefone/WhatsApp)</p><p>0800-055-1000 (Interior de SP)</p></div><div><h4>UNIDADE GUARULHOS</h4><p>Rua Antonio de Castro Figueirôa, 225</p><p>Vila Alzira - Guarulhos/SP</p></div></div><div class="footer-bottom"><span>© 2026 SENAI-SP - Unidade 122</span></div></div>""", unsafe_allow_html=True)
-
-# --- ÁREA ADMINISTRATIVA (CORRIGIDA) ---
-with st.sidebar:
-    st.markdown("---")
-    st.subheader("🔒 Área Administrativa")
-    
-    senha_mestra = st.secrets["auth"]["admin_password"] if "auth" in st.secrets else ""
-    senha_digitada = st.text_input("Senha", type="password", key="senha_admin")
-
-    if senha_mestra != "" and senha_digitada == senha_mestra:
-        st.success("Acesso Liberado")
-        if st.checkbox("Ver Leads"):
-            leads_df = ler_todos_leads()
-            if not leads_df.empty:
-                st.markdown("### 📊 Leads Cadastrados")
-                st.dataframe(leads_df)
-            else:
-                st.info("Nenhum lead encontrado.")
-        
-        st.button("Sair / Limpar Tudo", on_click=reset_geral_callback)
-    elif senha_digitada != "":
-        st.error("Senha incorreta")
