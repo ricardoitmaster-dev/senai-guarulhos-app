@@ -79,8 +79,4 @@ def conectar_google_sheets():
             "type": "service_account", "project_id": s["project_id"],
             "private_key_id": s["private_key_id"],
             "private_key": s["private_key"].replace("\\n", "\n").strip(),
-            "client_email": s["client_email"], "client_id": s["client_id"],
-            "auth_uri": s["auth_uri"], "token_uri": s["token_uri"],
-            "auth_provider_x509_cert_url": s["auth_provider_x509_cert_url"],
-            "client_x509_cert_url": s["client_x509_cert_url"]
-        }
+            "
