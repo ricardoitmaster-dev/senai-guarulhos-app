@@ -4,6 +4,7 @@ from datetime import datetime
 import os
 import base64
 import urllib.parse
+import re
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
@@ -24,6 +25,11 @@ def get_base64_of_bin_file(bin_file):
     except:
         return ""
     return ""
+
+# --- FUNÇÃO PARA LIMPAR NÚMERO DO WHATSAPP ---
+def limpar_whatsapp(numero):
+    # Remove tudo que não for número
+    return re.sub(r'\D', '', numero)
 
 # --- CSS: ESTILO 3D E RODAPÉ ---
 st.markdown("""
@@ -105,7 +111,6 @@ def salvar_novo_lead(lista_dados):
             insertDataOption="INSERT_ROWS", 
             body={"values": [lista_dados]}
         ).execute()
-        # Limpa o cache após salvar para que a próxima leitura venha atualizada
         st.cache_data.clear()
         return True
     except Exception:
@@ -147,26 +152,34 @@ with col2:
     with st.form("form_registro", clear_on_submit=True):
         nome = st.text_input("Nome Completo", key="nome_input")
         email = st.text_input("E-mail", key="email_input")
-        whats = st.text_input("WhatsApp", key="whats_input")
+        whats_raw = st.text_input("WhatsApp (com DDD)", placeholder="(11) 99999-9999", key="whats_input")
         obs = st.text_area("Observações", key="obs_input")
         enviar = st.form_submit_button("REGISTRAR AGORA")
 
         if enviar:
-            if area_sel != "Selecione..." and nome and email:
+            whats_limpo = limpar_whatsapp(whats_raw)
+            
+            if area_sel != "Selecione..." and nome and email and len(whats_limpo) >= 10:
                 data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                # Envia com aspas simples no WhatsApp para o Excel tratar como texto
-                if salvar_novo_lead([nome, email, f"'{whats}", area_sel, curso_sel, obs, data_atual]):
+                # Salva na planilha com o prefixo ' para o Excel não converter em número científico
+                if salvar_novo_lead([nome, email, f"'{whats_limpo}", area_sel, curso_sel, obs, data_atual]):
                     st.success(f"Excelente, {nome}! Seu interesse foi registrado.")
                     st.balloons()
-                    numero_destino = "551133220050" 
+                    
+                    # Número da Unidade (pode ser ajustado nos secrets depois)
+                    numero_unidade = "551133220050" 
                     mensagem_texto = f"Olá! Registrei interesse no curso: *{curso_sel}*. Meu nome é *{nome}*."
                     texto_url = urllib.parse.quote(mensagem_texto)
-                    link_wa = f"https://wa.me/{numero_destino}?text={texto_url}"
+                    link_wa = f"https://wa.me/{numero_unidade}?text={texto_url}"
+                    
                     st.markdown(f'<a href="{link_wa}" target="_blank" class="btn-whatsapp"><i class="fab fa-whatsapp" style="margin-right:10px;"></i> ENVIAR PELO WHATSAPP</a>', unsafe_allow_html=True)
                 else:
-                    st.error("Erro ao salvar.")
+                    st.error("Erro ao salvar os dados.")
             else:
-                st.error("Preencha todos os campos.")
+                if len(whats_limpo) < 10:
+                    st.warning("Por favor, insira um WhatsApp válido com DDD.")
+                else:
+                    st.error("Preencha todos os campos obrigatórios.")
 
 # --- RODAPÉ ---
 st.markdown("""<div class="footer-container"><div class="footer-top"><a href="https://www.sp.senai.br/fale-conosco" target="_blank">FALE CONOSCO</a><a href="https://www.sp.senai.br/trabalhe-conosco" target="_blank">TRABALHE CONOSCO</a><a href="https://www.sp.senai.br/ouvidoria" target="_blank">OUVIDORIA</a><a href="https://www.sp.senai.br/institucional/politica-de-privacidade" target="_blank">POLÍTICA DE PRIVACIDADE</a></div><div class="footer-social"><a href="https://www.facebook.com/senaisp" target="_blank"><i class="fab fa-facebook-f"></i></a><a href="https://www.youtube.com/senaisp" target="_blank"><i class="fab fa-youtube"></i></a><a href="https://www.instagram.com/senaisp/" target="_blank"><i class="fab fa-instagram"></i></a><a href="https://api.whatsapp.com/send?phone=551133220050" target="_blank"><i class="fab fa-whatsapp"></i></a></div><div class="footer-content"><div><h4>CENTRAL DE RELACIONAMENTO</h4><p>(11) 3322-0050 (Telefone/WhatsApp)</p><p>0800-055-1000 (Interior de SP)</p></div><div><h4>UNIDADE GUARULHOS</h4><p>Rua Antonio de Castro Figueirôa, 225</p><p>Vila Alzira - Guarulhos/SP</p></div></div><div class="footer-bottom"><span>© 2026 SENAI-SP - Unidade 122</span></div></div>""", unsafe_allow_html=True)
@@ -183,7 +196,6 @@ with st.sidebar:
         st.success("Acesso Liberado")
         
         if st.checkbox("Ver Leads"):
-            # Agora ele lê direto da planilha sem cache antigo
             leads_df = ler_todos_leads()
             
             if not leads_df.empty:
