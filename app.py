@@ -11,7 +11,7 @@ from googleapiclient.discovery import build
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="SENAI Guarulhos 122", page_icon="⚙️", layout="wide")
 
-# --- ESTILIZAÇÃO CSS (ISOLADA PARA EVITAR ERROS DE SINTAXE) ---
+# --- ESTILIZAÇÃO CSS (BMW PORTINARI, PRETO E OURO) ---
 estilo_css = """
 <style>
     .stApp { background-color: #003366; } 
@@ -154,27 +154,4 @@ logo_base = get_base64_of_bin_file(path_logo)
 if logo_base:
     st.markdown(f'<div class="logo-container"><div class="moldura-3d-ajustada" style="width:150px; margin: 0 auto;"><img src="data:image/png;base64,{logo_base}"></div></div>', unsafe_allow_html=True)
 
-st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - Registro de Interesse Profissional</p></div>', unsafe_allow_html=True)
-
-fachada_base = get_base64_of_bin_file(path_fachada)
-if fachada_base:
-    st.markdown(f'''<div style="text-align: center;"><div class="moldura-3d-ajustada" style="display: inline-block; width: auto; max-width: 90%;"><img src="data:image/jpeg;base64,{fachada_base}" style="display: block; width: auto; max-height: 350px;"></div></div>''', unsafe_allow_html=True)
-
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    opcoes_areas = ["Selecione..."] + sorted(list(DADOS_CURSOS.keys()))
-    area_sel = st.selectbox("Área Profissional:", opcoes_areas, key="area_input")
-    opcoes_cursos = sorted(DADOS_CURSOS[area_sel]) if area_sel != "Selecione..." else []
-    curso_sel = st.selectbox("Curso:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_sel == "Selecione..."), key="curso_input")
-
-    with st.form("form_registro", clear_on_submit=True):
-        nome = st.text_input("Nome Completo", key="nome_input")
-        email = st.text_input("E-mail", key="email_input")
-        whats_raw = st.text_input("WhatsApp (com DDD)", placeholder="(11) 99999-9999", key="whats_input")
-        obs = st.text_area("Observações", key="obs_input")
-        enviar = st.form_submit_button("REGISTRAR AGORA")
-
-        if enviar:
-            whats_limpo = limpar_whatsapp(whats_raw)
-            if area_sel != "Selecione..." and nome and email and len(whats_limpo) >= 10:
-                data_atual =
+st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 1
