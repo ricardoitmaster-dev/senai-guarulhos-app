@@ -4,7 +4,7 @@ from datetime import datetime
 import os
 import base64
 import urllib.parse
-import re  # Importado para limpeza de strings
+import re
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
@@ -134,16 +134,20 @@ with col2:
                     st.success(f"Excelente, {nome}! Seu interesse foi registrado.")
                     st.balloons()
                     
-                    # --- SEGURANÇA NO LINK WHATSAPP ---
-                    # 1. Limpa o número da unidade para garantir apenas dígitos
-                    whats_unidade = "551133220050" 
+                    # --- LÓGICA DE AMBIENTE DE TESTE ---
+                    # Pegamos o número digitado pelo usuário para ser o destino do WhatsApp
+                    whats_destino = re.sub(r'\D', '', whats_raw)
                     
-                    # 2. Prepara o texto da mensagem com formatação e codificação URL
+                    # Garante o código do país para o protocolo wa.me
+                    if not whats_destino.startswith('55'):
+                        whats_destino = '55' + whats_destino
+                    
+                    # Prepara a mensagem com codificação segura
                     texto_msg = f"Olá! Registrei interesse no curso: *{curso_sel}*. Meu nome é *{nome}*."
                     texto_safe = urllib.parse.quote(texto_msg)
                     
-                    # 3. Monta o link final seguindo o protocolo oficial (wa.me)
-                    link_wa = f"https://wa.me/{whats_unidade}?text={texto_safe}"
+                    # Gera o link para o número de teste (o seu número digitado)
+                    link_wa = f"https://wa.me/{whats_destino}?text={texto_safe}"
                     
                     st.markdown(f'<a href="{link_wa}" target="_blank" class="btn-whatsapp"><i class="fab fa-whatsapp" style="margin-right:10px;"></i> ENVIAR PELO WHATSAPP</a>', unsafe_allow_html=True)
                 else:
