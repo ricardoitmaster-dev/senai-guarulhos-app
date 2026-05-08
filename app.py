@@ -22,7 +22,7 @@ def get_base64_of_bin_file(bin_file):
             with open(bin_file, 'rb') as f:
                 data = f.read()
             return base64.b64encode(data).decode()
-    except:
+    except Exception:
         return ""
     return ""
 
@@ -40,11 +40,12 @@ st.markdown("""
     .moldura-3d-ajustada img { border-radius: 20px; display: block; width: 100%; height: auto; }
     .header-senai { background: #ff0000; padding: 40px 0px 25px 0px; color: white; text-align: center; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; z-index: 5; box-shadow: 0px 10px 15px rgba(0,0,0,0.1); border-bottom: 4px solid #cc0000; }
     .header-senai h1 { font-size: 28px !important; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-weight: 800; color: white !important; }
+    
     .btn-whatsapp { display: inline-flex; align-items: center; justify-content: center; background-color: #25D366 !important; color: white !important; padding: 15px 25px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 18px; box-shadow: 4px 4px 10px rgba(0,0,0,0.2); margin-top: 15px; width: 100%; transition: 0.3s; }
     .btn-whatsapp:hover { background-color: #128C7E !important; transform: scale(1.02); }
     .footer-container { width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; margin-top: 50px; font-family: sans-serif; }
     .footer-container a { text-decoration: none !important; color: inherit !important; }
-    .footer-top { background-color: #f4f4f4; padding: 15px 0; text-align: center; display: flex; justify-content: center; gap: 20px; font-size: 12px; font-weight: bold; color: #444; }
+    .footer-top { background-color: #f4f4f4; padding: 15px 0; text-align: center; display: flex; justify-content: center; gap: 20px; font-size: 12px; font-weight: bold; color: #444; flex-wrap: wrap; }
     .footer-social { background-color: #ff0000; padding: 15px 0; text-align: center; color: white; display: flex; justify-content: center; gap: 25px; font-size: 20px; }
     .footer-content { background-color: #b5121b; padding: 40px 10% 20px 10%; color: white; display: grid; grid-template-columns: 1fr 1fr; gap: 50px; }
     .footer-bottom { background-color: #b5121b; padding: 20px 0; border-top: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: center; gap: 30px; font-size: 13px; font-weight: bold; color: white !important; }
@@ -63,7 +64,7 @@ DADOS_CURSOS = {
         "IMPLANTAÇÃO DE SERVIÇOS DE INTELIGÊNCIA ARTIFICIAL GENERATIVA EM NUVEM – GOOGLE CLOUD", 
         "INTELIGÊNCIA ARTIFICIAL APLICADO À DETECÇÃO DE ANOMALIAS EM MÁQUINAS", 
         "INTELIGÊNCIA ARTIFICIAL NA PROGRAMAÇÃO CNC", 
-        "INTELIGÊNCIA ARTIFICIAL NO MONITORAMENTO DA MANUTENÇÃO PREDITIVA", 
+        "INTELIGÊNCIA ARTIFICIAL NO MONITORAMENTO DA MANUTENÇÃO PREDITIVA",
         "INTELIGÊNCIAS ARTIFICIAIS GENERATIVAS APLICADA A PROGRAMAÇÃO - CHATGPT", 
         "MARKETING DIGITAL COM INTELIGÊNCIA ARTIFICIAL", 
         "PROGRAMAÇÃO EM INTELIGÊNCIA ARTIFICIAL GENERATIVA"
@@ -124,7 +125,9 @@ def ler_todos_leads():
         sheet_id = url.split("/d/")[1].split("/")[0]
         result = service.spreadsheets().values().get(spreadsheetId=sheet_id, range="A1:Z2000").execute()
         values = result.get("values", [])
-        return pd.DataFrame(values[1:], columns=values[0]) if values else pd.DataFrame()
+        if values:
+            return pd.DataFrame(values[1:], columns=values[0])
+        return pd.DataFrame()
     except Exception:
         return pd.DataFrame()
 
@@ -146,6 +149,7 @@ col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     opcoes_areas = ["Selecione..."] + sorted(list(DADOS_CURSOS.keys()))
     area_sel = st.selectbox("Área Profissional:", opcoes_areas, key="area_input")
+    
     opcoes_cursos = sorted(DADOS_CURSOS[area_sel]) if area_sel != "Selecione..." else []
     curso_sel = st.selectbox("Curso:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_sel == "Selecione..."), key="curso_input")
 
@@ -161,12 +165,12 @@ with col2:
             
             if area_sel != "Selecione..." and nome and email and len(whats_limpo) >= 10:
                 data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                # Salva na planilha com o prefixo ' para o Excel não converter em número científico
+                # Salva no Google Sheets
                 if salvar_novo_lead([nome, email, f"'{whats_limpo}", area_sel, curso_sel, obs, data_atual]):
                     st.success(f"Excelente, {nome}! Seu interesse foi registrado.")
                     st.balloons()
                     
-                    # Número da Unidade (pode ser ajustado nos secrets depois)
+                    # Link do WhatsApp
                     numero_unidade = "551133220050" 
                     mensagem_texto = f"Olá! Registrei interesse no curso: *{curso_sel}*. Meu nome é *{nome}*."
                     texto_url = urllib.parse.quote(mensagem_texto)
@@ -174,17 +178,48 @@ with col2:
                     
                     st.markdown(f'<a href="{link_wa}" target="_blank" class="btn-whatsapp"><i class="fab fa-whatsapp" style="margin-right:10px;"></i> ENVIAR PELO WHATSAPP</a>', unsafe_allow_html=True)
                 else:
-                    st.error("Erro ao salvar os dados.")
+                    st.error("Erro ao salvar os dados no banco de dados. Verifique a conexão.")
             else:
                 if len(whats_limpo) < 10:
                     st.warning("Por favor, insira um WhatsApp válido com DDD.")
                 else:
                     st.error("Preencha todos os campos obrigatórios.")
 
-# --- RODAPÉ ---
-st.markdown("""<div class="footer-container"><div class="footer-top"><a href="https://www.sp.senai.br/fale-conosco" target="_blank">FALE CONOSCO</a><a href="https://www.sp.senai.br/trabalhe-conosco" target="_blank">TRABALHE CONOSCO</a><a href="https://www.sp.senai.br/ouvidoria" target="_blank">OUVIDORIA</a><a href="https://www.sp.senai.br/institucional/politica-de-privacidade" target="_blank">POLÍTICA DE PRIVACIDADE</a></div><div class="footer-social"><a href="https://www.facebook.com/senaisp" target="_blank"><i class="fab fa-facebook-f"></i></a><a href="https://www.youtube.com/senaisp" target="_blank"><i class="fab fa-youtube"></i></a><a href="https://www.instagram.com/senaisp/" target="_blank"><i class="fab fa-instagram"></i></a><a href="https://api.whatsapp.com/send?phone=551133220050" target="_blank"><i class="fab fa-whatsapp"></i></a></div><div class="footer-content"><div><h4>CENTRAL DE RELACIONAMENTO</h4><p>(11) 3322-0050 (Telefone/WhatsApp)</p><p>0800-055-1000 (Interior de SP)</p></div><div><h4>UNIDADE GUARULHOS</h4><p>Rua Antonio de Castro Figueirôa, 225</p><p>Vila Alzira - Guarulhos/SP</p></div></div><div class="footer-bottom"><span>© 2026 SENAI-SP - Unidade 122</span></div></div>""", unsafe_allow_html=True)
+# --- RODAPÉ ATUALIZADO (CORREÇÃO DE LINKS) ---
+st.markdown("""
+<div class="footer-container">
+    <div class="footer-top">
+        <a href="https://www.sp.senai.br/fale-conosco" target="_blank">FALE CONOSCO</a>
+        <a href="https://www.sp.senai.br/trabalhe-conosco" target="_blank">TRABALHE CONOSCO</a>
+        <a href="https://www.sp.senai.br/unidades/ouvidoria" target="_blank">OUVIDORIA</a>
+        <a href="https://www.sp.senai.br/institucional/politica-de-privacidade" target="_blank">POLÍTICA DE PRIVACIDADE</a>
+        <a href="https://www.sp.senai.br/institucional/a-lgpd-no-senai-sp" target="_blank">A LGPD NO SENAI-SP</a>
+    </div>
+    <div class="footer-social">
+        <a href="https://www.facebook.com/senaisp" target="_blank"><i class="fab fa-facebook-f"></i></a>
+        <a href="https://www.youtube.com/senaisp" target="_blank"><i class="fab fa-youtube"></i></a>
+        <a href="https://www.instagram.com/senaisp/" target="_blank"><i class="fab fa-instagram"></i></a>
+        <a href="https://api.whatsapp.com/send?phone=551133220050" target="_blank"><i class="fab fa-whatsapp"></i></a>
+    </div>
+    <div class="footer-content">
+        <div>
+            <h4>CENTRAL DE RELACIONAMENTO</h4>
+            <p>(11) 3322-0050 (Telefone/WhatsApp)</p>
+            <p>0800-055-1000 (Interior de SP)</p>
+        </div>
+        <div>
+            <h4>UNIDADE GUARULHOS</h4>
+            <p>Rua Antonio de Castro Figueirôa, 225</p>
+            <p>Vila Alzira - Guarulhos/SP</p>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <span>© 2026 SENAI-SP - Unidade 122</span>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-# --- ÁREA ADMINISTRATIVA ---
+# --- ÁREA ADMINISTRATIVA NA SIDEBAR ---
 with st.sidebar:
     st.markdown("---")
     st.subheader("🔒 Área Administrativa")
@@ -202,6 +237,7 @@ with st.sidebar:
                 st.markdown("### 📊 Leads Cadastrados")
                 st.dataframe(leads_df)
                 
+                # Botão de Download
                 csv_data = leads_df.to_csv(index=False).encode('utf-8-sig')
                 st.download_button(
                     label="📥 BAIXAR PLANILHA (CSV)",
@@ -213,6 +249,8 @@ with st.sidebar:
             else:
                 st.info("Nenhum lead encontrado.")
         
+        # Logout
         st.button("Sair / Limpar Tudo", on_click=reset_geral_callback)
+        
     elif senha_digitada != "":
         st.error("Senha incorreta")
