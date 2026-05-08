@@ -197,7 +197,7 @@ st.markdown("""
     </div>
     <div class="footer-social">
         <a href="https://www.facebook.com/senaisp" target="_blank"><i class="fab fa-facebook-f"></i></a>
-        <a href="https://www.youtube.com/senaisp" target="_blank"><i class="fab fa-youtube"></i></a>
+        <a href="https://www.youtube.com/channel/UCaz1BMUVug86pd_uS598X1A" target="_blank"><i class="fab fa-youtube"></i></a>
         <a href="https://www.instagram.com/senaisp/" target="_blank"><i class="fab fa-instagram"></i></a>
         <a href="https://api.whatsapp.com/send?phone=551133220050" target="_blank"><i class="fab fa-whatsapp"></i></a>
     </div>
