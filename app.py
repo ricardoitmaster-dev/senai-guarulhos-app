@@ -192,7 +192,7 @@ st.markdown("""
         <a href="https://www.sp.senai.br/fale-conosco" target="_blank">FALE CONOSCO</a>
         <a href="https://www.sp.senai.br/trabalhe-conosco" target="_blank">TRABALHE CONOSCO</a>
         <a href="https://www.sp.senai.br/unidades/ouvidoria" target="_blank">OUVIDORIA</a>
-        <a href="https://www.sp.senai.br/institucional/politica-de-privacidade" target="_blank">POLÍTICA DE PRIVACIDADE</a>
+        <a href="https://www.sp.senai.br/termos-de-uso-e-politica-de-privacidade" target="_blank">POLÍTICA DE PRIVACIDADE</a>   
         <a href="https://www.sp.senai.br/institucional/a-lgpd-no-senai-sp" target="_blank">A LGPD NO SENAI-SP</a>
     </div>
     <div class="footer-social">
