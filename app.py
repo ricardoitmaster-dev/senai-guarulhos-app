@@ -154,57 +154,5 @@ st.markdown('<div class="header-senai"><h1>SENAI GUARULHOS</h1><p>Unidade 122 - 
 
 fachada_base = get_base64_of_bin_file(path_fachada)
 if fachada_base:
-    st.markdown(f'''<div style="text-align: center;"><div class="moldura-3d-ajustada" style="display: inline-block; width: auto; max-width: 90%;"><img src="data:image/jpeg;base64,{fachada_base}" style="display: block; width: auto; max-height: 350px;"></div></div>''', unsafe_allow_html=True)
-
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    opcoes_areas = ["Selecione..."] + sorted(list(DADOS_CURSOS.keys()))
-    area_sel = st.selectbox("Área Profissional:", opcoes_areas, key="area_input")
-    
-    opcoes_cursos = sorted(DADOS_CURSOS[area_sel]) if area_sel != "Selecione..." else []
-    curso_sel = st.selectbox("Curso:", ["Aguardando área..."] + opcoes_cursos, disabled=(area_sel == "Selecione..."), key="curso_input")
-
-    with st.form("form_registro", clear_on_submit=True):
-        nome = st.text_input("Nome Completo", key="nome_input")
-        email = st.text_input("E-mail", key="email_input")
-        whats_raw = st.text_input("WhatsApp (com DDD)", placeholder="(11) 99999-9999", key="whats_input")
-        obs = st.text_area("Observações", key="obs_input")
-        enviar = st.form_submit_button("REGISTRAR AGORA")
-
-        if enviar:
-            whats_limpo = limpar_whatsapp(whats_raw)
-            
-            if area_sel != "Selecione..." and nome and email and len(whats_limpo) >= 10:
-                data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                # Salva no Google Sheets
-                if salvar_novo_lead([nome, email, f"'{whats_limpo}", area_sel, curso_sel, obs, data_atual]):
-                    st.success(f"Excelente, {nome}! Seu interesse foi registrado.")
-                    st.balloons()
-                    
-                    # Gera link do WhatsApp (Número da Unidade Fixo como antes)
-                    numero_unidade = "551133220050" 
-                    mensagem_texto = f"Olá! Registrei interesse no curso: *{curso_sel}*. Meu nome é *{nome}*."
-                    texto_url = urllib.parse.quote(mensagem_texto)
-                    link_wa = f"https://wa.me/{numero_unidade}?text={texto_url}"
-                    
-                    st.markdown(f'<a href="{link_wa}" target="_blank" class="btn-whatsapp"><i class="fab fa-whatsapp" style="margin-right:10px;"></i> ENVIAR PELO WHATSAPP</a>', unsafe_allow_html=True)
-                else:
-                    st.error("Erro ao salvar os dados no banco de dados. Verifique a conexão.")
-            else:
-                if len(whats_limpo) < 10:
-                    st.warning("Por favor, insira um WhatsApp válido com DDD.")
-                else:
-                    st.error("Preencha todos os campos obrigatórios.")
-
-# --- RODAPÉ ---
-st.markdown("""
-<div class="footer-container">
-    <div class="footer-top">
-        <a href="https://www.sp.senai.br/fale-conosco" target="_blank">FALE CONOSCO</a>
-        <a href="https://www.sp.senai.br/trabalhe-conosco" target="_blank">TRABALHE CONOSCO</a>
-        <a href="https://www.sp.senai.br/ouvidoria" target="_blank">OUVIDORIA</a>
-        <a href="https://www.sp.senai.br/institucional/politica-de-privacidade" target="_blank">POLÍTICA DE PRIVACIDADE</a>
-    </div>
-    <div class="footer-social">
-        <a href="https://www.facebook.com/senaisp" target="_blank"><i class="fab fa-facebook-f"></i></a>
-        <a href="
+    st.markdown(
+        
